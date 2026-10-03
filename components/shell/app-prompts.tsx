@@ -1,61 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { isIOS, isStandalone, type BeforeInstallPromptEvent } from "@/lib/install";
 import { enablePush, getPushState } from "@/lib/push";
 
-const INSTALL_DISMISSED_KEY = "witto:install-dismissed";
-const PUSH_DISMISSED_KEY = "witto:push-prompt-dismissed";
-const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
+type Install = { kind: "ios" } | { kind: "android"; event: BeforeInstallPromptEvent };
 
-type Prompt = { kind: "install-ios" } | { kind: "install-android"; event: BeforeInstallPromptEvent } | { kind: "push" };
-
-function snoozed(key: string): boolean {
-  try {
-    const at = Number(localStorage.getItem(key));
-    return Boolean(at) && Date.now() - at < SNOOZE_MS;
-  } catch {
-    return false;
-  }
-}
-
-function snooze(key: string) {
-  try {
-    localStorage.setItem(key, String(Date.now()));
-  } catch {}
-}
-
-async function initialPrompt(): Promise<Prompt | null> {
-  if (isStandalone()) {
-    if (snoozed(PUSH_DISMISSED_KEY) || !("Notification" in window) || Notification.permission !== "default") return null;
-    return (await getPushState()) === "off" ? { kind: "push" } : null;
-  }
-  if (snoozed(INSTALL_DISMISSED_KEY)) return null;
-  if (isIOS()) return { kind: "install-ios" };
-  return window.__installPrompt ? { kind: "install-android", event: window.__installPrompt } : null;
+async function initialInstall(): Promise<Install | null> {
+  if (isIOS()) return { kind: "ios" };
+  return window.__installPrompt ? { kind: "android", event: window.__installPrompt } : null;
 }
 
 /**
- * Mobile-only, signed-in-only alert under the header. In the browser it suggests adding Witto to the home screen; once
- * launched as the installed app it offers new puzzle alerts. The permission request has to come from a tap (iOS ignores
- * it otherwise, and Chrome downgrades sites that prompt on load), so this asks first and the button triggers the prompt.
+ * Mobile-only, signed-in-only alerts under the header: one to add Witto to the home screen until it's installed, and
+ * one for new puzzle alerts until they're on. Dismissing hides an alert until the next full page load. The permission
+ * request has to come from a tap (iOS ignores it otherwise, and Chrome downgrades sites that prompt on load), so this
+ * asks first and the button triggers the prompt.
  */
 export function AppPrompts() {
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [install, setInstall] = useState<Install | null>(null);
+  const [push, setPush] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!window.matchMedia("(pointer: coarse)").matches) return;
     let active = true;
-    initialPrompt().then((p) => active && p && setPrompt(p), () => {});
+    // "denied" can only be undone in browser settings, so a button here wouldn't do anything.
+    getPushState().then((state) => active && setPush(state === "off"), () => {});
     if (isStandalone()) return () => void (active = false);
+
+    initialInstall().then((i) => active && i && setInstall(i), () => {});
 
     const onPrompt = (e: Event) => {
       e.preventDefault();
-      if (!snoozed(INSTALL_DISMISSED_KEY)) setPrompt({ kind: "install-android", event: e as BeforeInstallPromptEvent });
+      setInstall({ kind: "android", event: e as BeforeInstallPromptEvent });
     };
-    const onInstalled = () => setPrompt(null);
+    const onInstalled = () => setInstall(null);
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
@@ -65,60 +46,102 @@ export function AppPrompts() {
     };
   }, []);
 
-  if (!prompt) return null;
-
-  function dismiss() {
-    snooze(prompt!.kind === "push" ? PUSH_DISMISSED_KEY : INSTALL_DISMISSED_KEY);
-    setPrompt(null);
-  }
-
-  async function act() {
+  async function run(action: () => Promise<void>) {
     setBusy(true);
     try {
-      if (prompt!.kind === "install-android") {
-        await prompt!.event.prompt();
-        const { outcome } = await prompt!.event.userChoice;
-        window.__installPrompt = undefined;
-        if (outcome === "dismissed") snooze(INSTALL_DISMISSED_KEY);
-      } else if (prompt!.kind === "push") {
-        // Whatever they pick in the system prompt, the account menu toggle covers it from here.
-        await enablePush();
-      }
+      await action();
     } catch (error) {
       console.error("App prompt action failed", error);
     } finally {
       setBusy(false);
-      setPrompt(null);
     }
   }
 
-  const copy = {
-    "install-ios": {
-      title: "Add Witto to your home screen",
-      body: (
-        <>
-          Tap <ShareGlyph /> Share, then <span className="font-semibold text-ink">Add to Home Screen</span>.
-        </>
-      ),
-    },
-    "install-android": { title: "Install Witto", body: "One tap to open today’s puzzle, right from your home screen." },
-    push: { title: "Never miss a puzzle", body: "Get a nudge when the new daily challenge drops." },
-  }[prompt.kind];
+  const installAndroid = (event: BeforeInstallPromptEvent) =>
+    run(async () => {
+      await event.prompt();
+      await event.userChoice;
+      // The event is single-use; Chrome fires a fresh one later if they dismissed.
+      window.__installPrompt = undefined;
+      setInstall(null);
+    });
+
+  const turnOnPush = () =>
+    run(async () => {
+      // Whatever they pick in the system prompt, the account menu toggle covers it from here.
+      await enablePush();
+      setPush(false);
+    });
+
+  if (!install && !push) return null;
 
   return (
-    <div role="status" className="mx-4 mt-1 mb-2 flex items-start gap-3 rounded-xl border border-brand-line bg-brand-soft py-3 pr-2 pl-4 sm:hidden">
+    <div className="mx-4 mt-1 mb-2 flex flex-col gap-2 sm:hidden">
+      {install?.kind === "ios" && (
+        <Alert
+          title="Add Witto to your home screen"
+          body={
+            <>
+              Tap <ShareGlyph /> Share, then <span className="font-semibold text-ink">Add to Home Screen</span>.
+            </>
+          }
+          onDismiss={() => setInstall(null)}
+          busy={busy}
+        />
+      )}
+      {install?.kind === "android" && (
+        <Alert
+          title="Install Witto"
+          body="One tap to open today’s puzzle, right from your home screen."
+          action="Install"
+          onAction={() => installAndroid(install.event)}
+          onDismiss={() => setInstall(null)}
+          busy={busy}
+        />
+      )}
+      {push && (
+        <Alert
+          title="Never miss a puzzle"
+          body="Get a nudge when the new daily challenge drops."
+          action="Turn on alerts"
+          onAction={turnOnPush}
+          onDismiss={() => setPush(false)}
+          busy={busy}
+        />
+      )}
+    </div>
+  );
+}
+
+function Alert({
+  title,
+  body,
+  action,
+  onAction,
+  onDismiss,
+  busy,
+}: {
+  title: string;
+  body: ReactNode;
+  action?: string;
+  onAction?: () => void;
+  onDismiss: () => void;
+  busy: boolean;
+}) {
+  return (
+    <div role="status" className="flex items-start gap-3 rounded-xl border border-brand-line bg-brand-soft py-3 pr-2 pl-4">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-ink">{copy.title}</p>
-        <p className="mt-0.5 text-sm text-ink-secondary">{copy.body}</p>
-        {prompt.kind !== "install-ios" && (
-          <Button size="sm" onClick={act} disabled={busy} className="mt-2">
-            {prompt.kind === "push" ? "Turn on alerts" : "Install"}
+        <p className="text-sm font-semibold text-ink">{title}</p>
+        <p className="mt-0.5 text-sm text-ink-secondary">{body}</p>
+        {action && (
+          <Button size="sm" onClick={onAction} disabled={busy} className="mt-2">
+            {action}
           </Button>
         )}
       </div>
       <button
         type="button"
-        onClick={dismiss}
+        onClick={onDismiss}
         disabled={busy}
         aria-label="Dismiss"
         className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-surface-muted hover:text-ink"
