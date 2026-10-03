@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree, Source_Serif_4 } from "next/font/google";
 import { MobileTabBar } from "@/components/shell/mobile-tab-bar";
+import { ServiceWorkerRegistration } from "@/components/shell/service-worker";
 import { SiteHeader } from "@/components/shell/site-header";
 import { getSessionUser } from "@/lib/auth";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -20,6 +21,12 @@ const sourceSerif = Source_Serif_4({
 export const metadata: Metadata = {
   title: "Witto — One fresh puzzle, every day",
   description: "A little challenge. A sharper you. One daily puzzle: word, math, riddle, trivia, mini crossword, spelling bee or connections.",
+  applicationName: "Witto",
+  appleWebApp: {
+    capable: true,
+    title: "Witto",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
@@ -44,6 +51,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader user={user} />
         <main className="flex-1 pb-24 sm:pb-16">{children}</main>
         <MobileTabBar />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
