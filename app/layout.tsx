@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree, Source_Serif_4 } from "next/font/google";
+import { AppPrompts } from "@/components/shell/app-prompts";
 import { MobileTabBar } from "@/components/shell/mobile-tab-bar";
 import { ServiceWorkerRegistration } from "@/components/shell/service-worker";
 import { SiteHeader } from "@/components/shell/site-header";
 import { getSessionUser } from "@/lib/auth";
+import { INSTALL_PROMPT_SCRIPT } from "@/lib/install";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -46,11 +48,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col bg-canvas font-sans text-ink">
         <SiteHeader user={user} />
         <main className="flex-1 pb-24 sm:pb-16">{children}</main>
         <MobileTabBar />
+        <AppPrompts signedIn={Boolean(user)} />
         <ServiceWorkerRegistration />
       </body>
     </html>
