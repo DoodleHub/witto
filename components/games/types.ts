@@ -1,10 +1,13 @@
 import type { DayResult } from "@/lib/progress";
 
-export type GameProps<C> = {
+/**
+ * A game gets the challenge's public content and the server's verified record of the play (`play`).
+ * Moves and hints go through playMove / takeHint, which update `play`, `result` and `hintUsed`.
+ */
+export type GameProps<C, P> = {
   dateKey: string;
   content: C;
+  play: P;
   result: DayResult | undefined;
-  onResult: (status: DayResult["status"]) => void;
   hintUsed: boolean;
-  onHint: () => void;
 };

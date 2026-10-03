@@ -4,25 +4,33 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HintRow } from "@/components/ui/hint-row";
 import { TextInput } from "@/components/ui/text-input";
-import { isCorrectAnswer, type AnswerContent } from "@/lib/challenges";
-import { useGameState } from "@/lib/progress";
+import type { AnswerContent, AnswerPlay } from "@/lib/challenges";
+import { playMove, takeHint, useGameState } from "@/lib/progress";
 import { ResultBanner } from "./result-banner";
 import type { GameProps } from "./types";
 
 const REVEAL_AFTER = 3;
 
-/** Free-text answer: riddles and math puzzles. */
-export function AnswerGame({ dateKey, content, result, onResult, hintUsed, onHint }: GameProps<AnswerContent>) {
+/** Free-text answer: riddles and math puzzles. Guesses are checked on the server, which holds the answers. */
+export function AnswerGame({ dateKey, content, play, result, hintUsed }: GameProps<AnswerContent, AnswerPlay>) {
   const [wrong, setWrong] = useGameState<number>(dateKey, 0);
   const [value, setValue] = useState("");
   const [shakeKey, setShakeKey] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const reveal = play.solution?.reveal;
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!value.trim()) return;
-    if (isCorrectAnswer(value, content.answers)) {
-      onResult("solved");
-    } else {
+    const guess = value.trim();
+    if (!guess || checking) return;
+    setChecking(true);
+    setCheckFailed(false);
+    const feedback = await playMove<{ correct: boolean }>(dateKey, { guess });
+    setChecking(false);
+    if (!feedback) {
+      setCheckFailed(true);
+    } else if (!feedback.correct) {
       setWrong(wrong + 1);
       setShakeKey((k) => k + 1);
     }
@@ -38,7 +46,7 @@ export function AnswerGame({ dateKey, content, result, onResult, hintUsed, onHin
         <div className="mt-6 sm:mt-8">
           <ResultBanner
             result={result}
-            detail={<>The answer: <strong className="font-semibold text-ink">{content.reveal}</strong></>}
+            detail={reveal && <>The answer: <strong className="font-semibold text-ink">{reveal}</strong></>}
           />
         </div>
       ) : (
@@ -55,17 +63,22 @@ export function AnswerGame({ dateKey, content, result, onResult, hintUsed, onHin
               autoComplete="off"
               className="sm:flex-1"
             />
-            <Button type="submit" size="lg" className="w-full sm:w-auto sm:min-w-[190px]">
-              Submit answer
+            <Button type="submit" size="lg" disabled={checking} className="w-full sm:w-auto sm:min-w-[190px]">
+              {checking ? "Checking…" : "Submit answer"}
             </Button>
           </form>
-          {wrong > 0 && (
+          {checkFailed && (
+            <p className="mt-3 text-sm text-danger" role="alert">
+              We couldn&apos;t check your answer. Try again.
+            </p>
+          )}
+          {wrong > 0 && !checkFailed && (
             <p key={wrong} className="mt-3 animate-rise text-sm text-danger" role="alert">
               Not quite — try again.
               {wrong >= REVEAL_AFTER && (
                 <button
                   type="button"
-                  onClick={() => onResult("failed")}
+                  onClick={() => playMove(dateKey, { give_up: true })}
                   className="ml-2 font-semibold text-ink-secondary underline-offset-2 hover:underline"
                 >
                   Reveal the answer
@@ -74,7 +87,7 @@ export function AnswerGame({ dateKey, content, result, onResult, hintUsed, onHin
             </p>
           )}
           <div className="mt-5 sm:mt-7">
-            <HintRow used={hintUsed} hint={content.hint} onHint={onHint} />
+            <HintRow used={hintUsed} hint={play.hint?.text} onHint={() => takeHint(dateKey)} />
           </div>
         </>
       )}

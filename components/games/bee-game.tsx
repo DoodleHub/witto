@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
 import { BackspaceIcon, ShuffleIcon } from "@/components/ui/icons";
-import type { BeeContent } from "@/lib/challenges";
-import { useGameState } from "@/lib/progress";
+import type { BeeContent, BeePlay } from "@/lib/challenges";
+import { playMove, takeHint } from "@/lib/progress";
 import { ResultBanner } from "./result-banner";
 import type { GameProps } from "./types";
 
@@ -22,8 +22,9 @@ const SLOTS = [
   [-0.75, -0.5],
 ];
 
-export function BeeGame({ dateKey, content, result, onResult, hintUsed, onHint }: GameProps<BeeContent>) {
-  const [found, setFound] = useGameState<string[]>(dateKey, []);
+/** Words are checked on the server, which holds the word list and keeps going after the goal is reached. */
+export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<BeeContent, BeePlay>) {
+  const found = play.found ?? [];
   const [outer, setOuter] = useState(content.outer);
   const [current, setCurrent] = useState("");
   const [flash, setFlash] = useState<{ text: string; good: boolean; id: number } | null>(null);
@@ -32,20 +33,19 @@ export function BeeGame({ dateKey, content, result, onResult, hintUsed, onHint }
 
   const say = (text: string, good = false) => setFlash({ text, good, id: Date.now() });
 
-  const submit = useCallback(() => {
+  const submit = useCallback(async () => {
     const w = current;
     setCurrent("");
     if (w.length < 4) return say("Too short");
     if (!w.includes(content.center)) return say("Missing center letter");
     if ([...w].some((ch) => !letters.has(ch))) return say("Bad letters");
     if (found.includes(w)) return say("Already found");
-    if (!content.words.includes(w)) return say("Not in word list");
-    const next = [...found, w];
-    setFound(next);
+    const feedback = await playMove<{ accepted: boolean }>(dateKey, { word: w });
+    if (!feedback) return say("Couldn't check that word");
+    if (!feedback.accepted) return say("Not in word list");
     say(isPangram(w) ? "Pangram!" : w.length >= 6 ? "Awesome!" : "Nice!", true);
-    if (next.length >= content.goal && !result) onResult("solved");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, found, content, result, onResult, setFound]);
+  }, [current, found, content, dateKey]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -71,7 +71,7 @@ export function BeeGame({ dateKey, content, result, onResult, hintUsed, onHint }
     setOuter(next);
   }
 
-  const hintWord = content.words.find((w) => !found.includes(w) && w.length >= 5) ?? content.words.find((w) => !found.includes(w));
+  const hint = play.hint;
   const progress = Math.min(1, found.length / content.goal);
 
   return (
@@ -176,17 +176,17 @@ export function BeeGame({ dateKey, content, result, onResult, hintUsed, onHint }
         {result ? (
           <ResultBanner
             result={result}
-            detail={`${found.length} of ${content.words.length} words found — keep going if you like.`}
+            detail={`${found.length} of ${content.total} words found — keep going if you like.`}
           />
         ) : (
           <HintRow
             used={hintUsed}
-            onHint={onHint}
+            onHint={() => takeHint(dateKey)}
             hint={
-              hintWord && (
+              hint && (
                 <>
-                  Try a {hintWord.length}-letter word starting with{" "}
-                  <strong className="font-semibold uppercase text-brand-ink">{hintWord.slice(0, 2)}</strong>.
+                  Try a {hint.length}-letter word starting with{" "}
+                  <strong className="font-semibold uppercase text-brand-ink">{hint.start}</strong>.
                 </>
               )
             }

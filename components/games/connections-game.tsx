@@ -4,15 +4,16 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
-import type { ConnectionsContent } from "@/lib/challenges";
-import { useGameState } from "@/lib/progress";
+import type { ConnectionsContent, ConnectionsGroup, ConnectionsPlay } from "@/lib/challenges";
+import { playMove, takeHint, useGameState } from "@/lib/progress";
 import { ResultBanner } from "./result-banner";
 import type { GameProps } from "./types";
 
 const MAX_MISTAKES = 4;
 const GROUP_TONES = ["bg-cat-1", "bg-cat-2", "bg-cat-3", "bg-cat-4"];
 
-type State = { solved: number[]; mistakes: number; order: string[]; tried: string[] };
+/** The player's tile order; which groups are found, and the mistakes made, are the server's record. */
+type State = { order: string[] };
 
 function seededShuffle<T>(items: T[], seed: string): T[] {
   let h = 2166136261;
@@ -26,57 +27,50 @@ function seededShuffle<T>(items: T[], seed: string): T[] {
   return out;
 }
 
-export function ConnectionsGame({ dateKey, content, result, onResult, hintUsed, onHint }: GameProps<ConnectionsContent>) {
-  const { groups } = content;
-  const [state, setState] = useGameState<State>(dateKey, {
-    solved: [],
-    mistakes: 0,
-    order: seededShuffle(groups.flatMap((g) => g.words), dateKey),
-    tried: [],
-  });
+/** Groups are checked on the server, which holds them; the board only knows the sixteen words. */
+export function ConnectionsGame({ dateKey, content, play, result, hintUsed }: GameProps<ConnectionsContent, ConnectionsPlay>) {
+  const [state, setState] = useGameState<State>(dateKey, { order: content.words });
   const [selected, setSelected] = useState<string[]>([]);
+  const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [shake, setShake] = useState(0);
 
-  const groupOf = (word: string) => groups.findIndex((g) => g.words.includes(word));
-  const solvedWords = new Set(state.solved.flatMap((g) => groups[g].words));
+  const solved = play.solved ?? [];
+  const mistakes = play.mistakes ?? 0;
+  const solvedWords = new Set(solved.flatMap((g) => g.words));
   const remaining = state.order.filter((w) => !solvedWords.has(w));
-  // After a loss, show every group in its row.
-  const shownGroups = result?.status === "failed" ? [...state.solved, ...groups.map((_, i) => i).filter((i) => !state.solved.includes(i))] : state.solved;
+  // After a loss, show every group in its row: the found ones first, then the rest.
+  const shownGroups: (ConnectionsGroup & { group: number })[] = [
+    ...solved,
+    ...(result?.status === "failed" ? (play.solution?.groups ?? []) : [])
+      .map((g, group) => ({ ...g, group }))
+      .filter((g) => !solved.some((s) => s.group === g.group)),
+  ];
 
   function toggle(word: string) {
     setMessage(null);
     setSelected((s) => (s.includes(word) ? s.filter((w) => w !== word) : s.length < 4 ? [...s, word] : s));
   }
 
-  function submit() {
-    const key = [...selected].sort().join("|");
-    if (state.tried.includes(key)) {
+  async function submit() {
+    if (checking) return;
+    setChecking(true);
+    const feedback = await playMove<{ correct?: boolean; one_away?: boolean; repeat?: boolean }>(dateKey, {
+      words: selected,
+    });
+    setChecking(false);
+    if (!feedback) {
+      setMessage("Couldn't check that group. Try again.");
+    } else if (feedback.repeat) {
       setMessage("Already guessed!");
-      return;
-    }
-    const counts = new Map<number, number>();
-    selected.forEach((w) => counts.set(groupOf(w), (counts.get(groupOf(w)) ?? 0) + 1));
-    const best = Math.max(...counts.values());
-    if (best === 4) {
-      const g = groupOf(selected[0]);
-      const solved = [...state.solved, g];
-      setState({ ...state, solved, tried: [...state.tried, key] });
+    } else if (feedback.correct) {
       setSelected([]);
-      if (solved.length === groups.length) onResult("solved");
-      return;
-    }
-    const mistakes = state.mistakes + 1;
-    setState({ ...state, mistakes, tried: [...state.tried, key] });
-    setShake((s) => s + 1);
-    setMessage(best === 3 ? "One away…" : null);
-    if (mistakes >= MAX_MISTAKES) {
-      setSelected([]);
-      onResult("failed");
+    } else {
+      setShake((s) => s + 1);
+      setMessage(feedback.one_away ? "One away…" : null);
     }
   }
 
-  const hintGroup = groups.findIndex((_, i) => !state.solved.includes(i));
 
   return (
     <>
@@ -87,11 +81,11 @@ export function ConnectionsGame({ dateKey, content, result, onResult, hintUsed, 
       <div className="mt-5 flex flex-col gap-2 sm:mt-8 sm:gap-2.5">
         {shownGroups.map((g) => (
           <div
-            key={g}
-            className={cn("flex animate-rise flex-col items-center justify-center rounded-xl px-3 py-3 text-center sm:min-h-[76px]", GROUP_TONES[g])}
+            key={g.group}
+            className={cn("flex animate-rise flex-col items-center justify-center rounded-xl px-3 py-3 text-center sm:min-h-[76px]", GROUP_TONES[g.group])}
           >
-            <p className="text-sm font-bold uppercase tracking-[0.06em] text-ink sm:text-base">{groups[g].theme}</p>
-            <p className="text-sm text-ink-secondary sm:text-base">{groups[g].words.join(", ")}</p>
+            <p className="text-sm font-bold uppercase tracking-[0.06em] text-ink sm:text-base">{g.theme}</p>
+            <p className="text-sm text-ink-secondary sm:text-base">{g.words.join(", ")}</p>
           </div>
         ))}
 
@@ -125,7 +119,7 @@ export function ConnectionsGame({ dateKey, content, result, onResult, hintUsed, 
             {Array.from({ length: MAX_MISTAKES }, (_, i) => (
               <span
                 key={i}
-                className={cn("size-2.5 rounded-full", i < MAX_MISTAKES - state.mistakes ? "bg-ink-secondary" : "bg-track")}
+                className={cn("size-2.5 rounded-full", i < MAX_MISTAKES - mistakes ? "bg-ink-secondary" : "bg-track")}
               />
             ))}
           </div>
@@ -144,7 +138,7 @@ export function ConnectionsGame({ dateKey, content, result, onResult, hintUsed, 
             <Button variant="secondary" disabled={selected.length === 0} onClick={() => setSelected([])}>
               Deselect all
             </Button>
-            <Button disabled={selected.length !== 4} onClick={submit}>
+            <Button disabled={selected.length !== 4 || checking} onClick={submit}>
               Submit
             </Button>
           </div>
@@ -157,18 +151,20 @@ export function ConnectionsGame({ dateKey, content, result, onResult, hintUsed, 
             result={result}
             detail={
               result.status === "solved"
-                ? `All four groups with ${state.mistakes} ${state.mistakes === 1 ? "mistake" : "mistakes"}.`
+                ? `All four groups with ${mistakes} ${mistakes === 1 ? "mistake" : "mistakes"}.`
                 : "Here's how the groups fit together."
             }
           />
         ) : (
           <HintRow
             used={hintUsed}
-            onHint={onHint}
+            onHint={() => takeHint(dateKey)}
             hint={
-              <>
-                One group is <strong className="font-semibold text-ink">{groups[hintGroup]?.theme}</strong>.
-              </>
+              play.hint && (
+                <>
+                  One group is <strong className="font-semibold text-ink">{play.hint.theme}</strong>.
+                </>
+              )
             }
           />
         )}

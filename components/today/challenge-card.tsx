@@ -9,28 +9,35 @@ import { FactGame } from "@/components/games/fact-game";
 import { WordGame } from "@/components/games/word-game";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { TYPE_META, type Challenge } from "@/lib/challenges";
-import { markHint, markStarted, recordResult, type DayResult } from "@/lib/progress";
+import {
+  TYPE_META,
+  type AnswerPlay,
+  type BeePlay,
+  type Challenge,
+  type ConnectionsPlay,
+  type CrosswordPlay,
+  type FactPlay,
+  type WordPlay,
+} from "@/lib/challenges";
+import { markStarted, type DayResult } from "@/lib/progress";
 
 type Props = {
   challenge: Challenge & { number: number; dateKey: string };
+  /** The server's verified record of the play, shaped per game. */
+  play: unknown;
   result: DayResult | undefined;
   hintUsed: boolean;
 };
 
-export function ChallengeCard({ challenge, result, hintUsed }: Props) {
+export function ChallengeCard({ challenge, play, result, hintUsed }: Props) {
   const { dateKey } = challenge;
   const meta = TYPE_META[challenge.type];
 
   useEffect(() => markStarted(dateKey), [dateKey]);
 
-  const shared = {
-    dateKey,
-    result,
-    hintUsed,
-    onHint: () => markHint(dateKey),
-    onResult: (status: DayResult["status"]) => recordResult(dateKey, status),
-  };
+  const shared = { dateKey, result, hintUsed };
+  // The server shapes the play's state to match the challenge type.
+  const state = play ?? {};
 
   return (
     <Card variant="challenge" className="px-6 pb-7 pt-6 sm:px-12 sm:pb-10 sm:pt-7">
@@ -48,14 +55,14 @@ export function ChallengeCard({ challenge, result, hintUsed }: Props) {
       <h2 className="mt-5 font-serif text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink sm:mt-8 sm:text-[52px]">
         {meta.title}
       </h2>
-      {challenge.type === "word" && <WordGame {...shared} content={challenge.content} />}
+      {challenge.type === "word" && <WordGame {...shared} content={challenge.content} play={state as WordPlay} />}
       {(challenge.type === "riddle" || challenge.type === "math") && (
-        <AnswerGame {...shared} content={challenge.content} />
+        <AnswerGame {...shared} content={challenge.content} play={state as AnswerPlay} />
       )}
-      {challenge.type === "fact" && <FactGame {...shared} content={challenge.content} />}
-      {challenge.type === "crossword" && <CrosswordGame {...shared} content={challenge.content} />}
-      {challenge.type === "bee" && <BeeGame {...shared} content={challenge.content} />}
-      {challenge.type === "connections" && <ConnectionsGame {...shared} content={challenge.content} />}
+      {challenge.type === "fact" && <FactGame {...shared} content={challenge.content} play={state as FactPlay} />}
+      {challenge.type === "crossword" && <CrosswordGame {...shared} content={challenge.content} play={state as CrosswordPlay} />}
+      {challenge.type === "bee" && <BeeGame {...shared} content={challenge.content} play={state as BeePlay} />}
+      {challenge.type === "connections" && <ConnectionsGame {...shared} content={challenge.content} play={state as ConnectionsPlay} />}
     </Card>
   );
 }

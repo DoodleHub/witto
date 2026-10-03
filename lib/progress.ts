@@ -14,12 +14,14 @@ export type Store = {
   games: Record<string, unknown>;
   startedAt: Record<string, number>;
   hints: Record<string, boolean>;
+  /** The server's verified record of each play (plays.server_state); see the *Play types in challenges.ts. */
+  states: Record<string, unknown>;
 };
 
 /**
- * The signed-in player's progress, mirrored from the `plays` table. Updates apply locally first and are
- * written through to Supabase in order, one queue per day; the server owns timing, so a finished play's
- * solve time is replaced with the server's once the write lands.
+ * The signed-in player's progress, mirrored from the `plays` table. Writes go to Supabase in order, one
+ * queue per day. Game state the player can't cheat with (UI state) applies locally first; moves, hints
+ * and results are the server's call, so they show once it has checked them.
  */
 type Cache = { userId: string; store: Store | null; error: boolean };
 
@@ -61,7 +63,7 @@ async function load(userId: string) {
 
   const { data, error } = await createClient()
     .from("plays")
-    .select("challenge_day, started_at, hint_used, game_state, status, time_ms")
+    .select("challenge_day, started_at, hint_used, game_state, server_state, status, time_ms")
     .eq("user_id", userId);
   if (cache?.userId !== userId) return; // Another player signed in meanwhile.
   if (error) {
@@ -70,13 +72,14 @@ async function load(userId: string) {
     return;
   }
 
-  const store: Store = { results: {}, games: {}, startedAt: {}, hints: {} };
+  const store: Store = { results: {}, games: {}, startedAt: {}, hints: {}, states: {} };
   for (const row of data) {
     const day = row.challenge_day;
     started.add(day);
     store.startedAt[day] = Date.parse(row.started_at);
     if (row.hint_used) store.hints[day] = true;
     if (row.game_state !== null) store.games[day] = row.game_state;
+    store.states[day] = row.server_state;
     const result = toResult(row);
     if (result) store.results[day] = result;
   }
@@ -84,15 +87,17 @@ async function load(userId: string) {
 }
 
 /** Runs `task` after every earlier write for `dateKey`, so a play is created before it's updated. */
-function enqueue(dateKey: string, task: () => PromiseLike<{ error: unknown }>) {
+function enqueue<R extends { error: unknown }>(dateKey: string, task: () => PromiseLike<R>): Promise<R | undefined> {
   const userId = cache?.userId;
   const prev = queues.get(dateKey) ?? Promise.resolve();
   const next = prev.then(async () => {
-    if (cache?.userId !== userId) return;
-    const { error } = await task();
-    if (error) console.error(`Failed to save progress for ${dateKey}`, error);
+    if (cache?.userId !== userId) return undefined;
+    const response = await task();
+    if (response.error) console.error(`Failed to save progress for ${dateKey}`, response.error);
+    return response;
   });
-  queues.set(dateKey, next);
+  queues.set(dateKey, next.then(() => undefined));
+  return next;
 }
 
 /** The signed-in player's progress on the client; null while loading and during server render. */
@@ -116,39 +121,50 @@ export function markStarted(dateKey: string) {
   );
 }
 
-export function markHint(dateKey: string) {
-  if (!cache?.store) return;
-  const userId = cache.userId;
-  setStore((s) => ({ ...s, hints: { ...s.hints, [dateKey]: true } }));
-  enqueue(dateKey, () =>
-    createClient().from("plays").update({ hint_used: true }).eq("user_id", userId).eq("challenge_day", dateKey),
-  );
+type PlaySnapshot = { feedback: unknown; status: string | null; time_ms: number | null; hint_used: boolean; state: unknown };
+
+/** Mirrors a play as the server returned it from play_move or take_hint. */
+function applySnapshot(userId: string, dateKey: string, snap: PlaySnapshot) {
+  if (cache?.userId !== userId) return;
+  const result = toResult(snap);
+  setStore((s) => ({
+    ...s,
+    states: { ...s.states, [dateKey]: snap.state },
+    hints: snap.hint_used ? { ...s.hints, [dateKey]: true } : s.hints,
+    results: result ? { ...s.results, [dateKey]: result } : s.results,
+  }));
 }
 
-export function recordResult(dateKey: string, status: DayResult["status"]) {
-  const store = cache?.store;
+/**
+ * Sends a move to the server, which checks it against the answer, records it and finishes the play when
+ * it's won or lost (see play_move for each game's moves). Resolves to the game's feedback on the move,
+ * or null if it couldn't be checked.
+ */
+export async function playMove<F>(dateKey: string, move: Record<string, Json>): Promise<F | null> {
   const userId = cache?.userId;
-  if (!store || !userId || store.results[dateKey]) return;
-  const startedAt = store.startedAt[dateKey] ?? Date.now();
-  const result: DayResult = { status, timeMs: Date.now() - startedAt, hintUsed: !!store.hints[dateKey] };
-  setStore((s) => ({ ...s, results: { ...s.results, [dateKey]: result } }));
-
-  enqueue(dateKey, async () => {
-    const response = await createClient()
-      .from("plays")
-      .update({ status })
-      .eq("user_id", userId)
-      .eq("challenge_day", dateKey)
-      .select("status, time_ms, hint_used")
-      .maybeSingle();
-    // Show the server's verdict and timing (it keeps the first result if another tab finished first).
-    const saved = response.data && toResult(response.data);
-    if (saved && cache?.userId === userId) setStore((s) => ({ ...s, results: { ...s.results, [dateKey]: saved } }));
-    return response;
-  });
+  if (!cache?.store || !userId) return null;
+  const response = await enqueue(dateKey, () => createClient().rpc("play_move", { on_day: dateKey, move }));
+  const snap = response?.data as PlaySnapshot | null | undefined;
+  if (!snap) return null;
+  applySnapshot(userId, dateKey, snap);
+  return snap.feedback as F;
 }
 
-/** Per-day game state (guesses, found words, ...), saved with the rest of the play. */
+/**
+ * Asks the server for the day's hint, which it records against the play (see take_hint). Resolves to the
+ * hint, or null if it couldn't be had.
+ */
+export async function takeHint<H>(dateKey: string, context: Record<string, Json> = {}): Promise<H | null> {
+  const userId = cache?.userId;
+  if (!cache?.store || !userId) return null;
+  const response = await enqueue(dateKey, () => createClient().rpc("take_hint", { on_day: dateKey, context }));
+  const snap = response?.data as PlaySnapshot | null | undefined;
+  if (!snap) return null;
+  applySnapshot(userId, dateKey, snap);
+  return (snap.state as { hint?: H } | null)?.hint ?? null;
+}
+
+/** Per-day UI state (typed entries, tile order, ...), saved with the rest of the play. */
 export function useGameState<T>(dateKey: string, initial: T): [T, (next: T) => void] {
   const current = useSyncExternalStore(subscribe, getCache, () => null);
   const value = (current?.store?.games[dateKey] as T | undefined) ?? initial;

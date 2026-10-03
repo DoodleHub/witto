@@ -43,6 +43,7 @@ export type Database = {
           finished_at: string | null
           game_state: Json | null
           hint_used: boolean
+          server_state: Json
           started_at: string
           status: string | null
           time_ms: number | null
@@ -53,6 +54,7 @@ export type Database = {
           finished_at?: string | null
           game_state?: Json | null
           hint_used?: boolean
+          server_state?: Json
           started_at?: string
           status?: string | null
           time_ms?: number | null
@@ -63,6 +65,7 @@ export type Database = {
           finished_at?: string | null
           game_state?: Json | null
           hint_used?: boolean
+          server_state?: Json
           started_at?: string
           status?: string | null
           time_ms?: number | null
@@ -108,7 +111,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      challenge_for_day: {
+        Args: { on_day: string }
+        Returns: {
+          content: Json
+          number: number
+          type: string
+        }[]
+      }
+      challenge_public_content: {
+        Args: { c: Database["public"]["Tables"]["challenges"]["Row"] }
+        Returns: Json
+      }
+      challenge_solution: {
+        Args: { c: Database["public"]["Tables"]["challenges"]["Row"] }
+        Returns: Json
+      }
       challenge_today: { Args: never; Returns: string }
+      crossword_cells: {
+        Args: { c: Database["public"]["Tables"]["challenges"]["Row"] }
+        Returns: {
+          cell: number
+          letter: string
+        }[]
+      }
       display_name_available: { Args: { name: string }; Returns: boolean }
       leaderboard: {
         Args: { max_rows?: number; on_day: string; period: string }
@@ -122,7 +148,18 @@ export type Database = {
           value: number
         }[]
       }
+      normalize_answer: { Args: { input: string }; Returns: string }
+      play_move: { Args: { move: Json; on_day: string }; Returns: Json }
+      play_snapshot: {
+        Args: {
+          feedback: Json
+          p: Database["public"]["Tables"]["plays"]["Row"]
+        }
+        Returns: Json
+      }
       server_now: { Args: never; Returns: string }
+      take_hint: { Args: { context?: Json; on_day: string }; Returns: Json }
+      word_marks: { Args: { answer: string; guess: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

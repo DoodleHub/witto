@@ -4,8 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
-import type { CrosswordContent } from "@/lib/challenges";
-import { useGameState } from "@/lib/progress";
+import type { CrosswordContent, CrosswordPlay } from "@/lib/challenges";
+import { playMove, takeHint, useGameState } from "@/lib/progress";
 import { ResultBanner } from "./result-banner";
 import type { GameProps } from "./types";
 
@@ -14,8 +14,9 @@ type Dir = "across" | "down";
 type Word = { dir: Dir; num: number; cells: number[] };
 type State = { entries: string[]; revealed: number[] };
 
+/** Numbering and words from the grid's shape ("#" blocks, anything else a square). */
 function buildLayout(grid: string[]) {
-  const solution = grid.join("").toLowerCase().split("");
+  const cells = grid.join("").split("");
   const isBlock = (r: number, c: number) => r < 0 || c < 0 || r >= N || c >= N || grid[r][c] === "#";
   const numbers: (number | null)[] = Array(N * N).fill(null);
   const words: Word[] = [];
@@ -40,18 +41,21 @@ function buildLayout(grid: string[]) {
       }
     }
   }
-  return { solution, numbers, words };
+  return { cells, numbers, words };
 }
 
-export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, onHint }: GameProps<CrosswordContent>) {
-  const { solution, numbers, words } = useMemo(() => buildLayout(content.grid), [content.grid]);
+/** The grid's letters stay on the server, which checks the entries and supplies revealed squares. */
+export function CrosswordGame({ dateKey, content, play, result, hintUsed }: GameProps<CrosswordContent, CrosswordPlay>) {
+  const { cells, numbers, words } = useMemo(() => buildLayout(content.grid), [content.grid]);
   const [state, setState] = useGameState<State>(dateKey, {
     entries: Array(N * N).fill(""),
     revealed: [],
   });
-  const [sel, setSel] = useState(() => solution.findIndex((ch) => ch !== "#"));
+  const [sel, setSel] = useState(() => cells.findIndex((ch) => ch !== "#"));
   const [dir, setDir] = useState<Dir>("across");
-  const [checked, setChecked] = useState(false);
+  /** Squares the server said were wrong when the player last checked; null when not showing a check. */
+  const [wrongCells, setWrongCells] = useState<number[] | null>(null);
+  const [busy, setBusy] = useState(false);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const done = !!result;
 
@@ -65,10 +69,21 @@ export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, on
     refs.current[i]?.focus();
   }
 
+  // Once the game is over the server shares the answer grid, which then fills the squares.
+  const finished = play.solution?.grid.join("").toLowerCase().split("");
+  const shown = finished ?? state.entries;
+  const isFilled = (entries: string[]) => entries.every((e, i) => cells[i] === "#" || e);
+
+  /** Sends the entries to the server, which solves the play if they're all right. */
+  async function check(entries: string[], show: boolean) {
+    const feedback = await playMove<{ wrong: number[] }>(dateKey, { entries });
+    if (feedback && show) setWrongCells(feedback.wrong);
+  }
+
   function commit(entries: string[], revealed = state.revealed) {
     setState({ entries, revealed });
-    setChecked(false);
-    if (entries.every((e, i) => solution[i] === "#" || e === solution[i])) onResult("solved");
+    setWrongCells(null);
+    if (isFilled(entries)) void check(entries, false);
   }
 
   function step(from: number, delta: 1 | -1) {
@@ -98,7 +113,7 @@ export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, on
     let r = Math.floor(i / N) + dr;
     let c = (i % N) + dc;
     while (r >= 0 && c >= 0 && r < N && c < N) {
-      if (solution[r * N + c] !== "#") return focus(r * N + c);
+      if (cells[r * N + c] !== "#") return focus(r * N + c);
       r += dr;
       c += dc;
     }
@@ -137,18 +152,25 @@ export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, on
     if (/^[a-z]$/.test(ch)) type(i, ch);
   }
 
-  function revealOne() {
-    const pool = activeWord?.cells ?? [];
-    const target =
-      pool.find((i) => state.entries[i] !== solution[i]) ??
-      solution.findIndex((ch, i) => ch !== "#" && state.entries[i] !== ch);
-    if (target < 0) return;
+  /** The hint: the server fills in a wrong or empty square, preferring the selected word. */
+  async function revealOne() {
+    const hint = await takeHint<NonNullable<CrosswordPlay["hint"]>>(dateKey, {
+      entries: state.entries,
+      pool: activeWord?.cells ?? [],
+    });
+    if (!hint) return;
     const entries = [...state.entries];
-    entries[target] = solution[target];
-    commit(entries, [...state.revealed, target]);
+    entries[hint.cell] = hint.letter;
+    commit(entries, [...state.revealed, hint.cell]);
   }
 
-  const filled = state.entries.every((e, i) => solution[i] === "#" || e);
+  async function revealAll() {
+    setBusy(true);
+    await playMove(dateKey, { give_up: true });
+    setBusy(false);
+  }
+
+  const filled = isFilled(state.entries);
 
   return (
     <>
@@ -170,10 +192,10 @@ export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, on
             role="grid"
             aria-label="Crossword grid"
           >
-            {solution.map((ch, i) => {
+            {cells.map((ch, i) => {
               if (ch === "#") return <div key={i} className="aspect-square bg-block" />;
               const inWord = activeWord?.cells.includes(i);
-              const wrong = checked && state.entries[i] && state.entries[i] !== ch;
+              const wrong = !done && state.entries[i] && wrongCells?.includes(i);
               const revealed = state.revealed.includes(i);
               return (
                 <div
@@ -192,7 +214,7 @@ export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, on
                     ref={(el) => {
                       refs.current[i] = el;
                     }}
-                    value={state.entries[i].toUpperCase()}
+                    value={shown[i].toUpperCase()}
                     onChange={(e) => onChange(i, e)}
                     onKeyDown={(e) => onKeyDown(i, e)}
                     onFocus={() => setSel(i)}
@@ -264,26 +286,16 @@ export function CrosswordGame({ dateKey, content, result, onResult, hintUsed, on
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <HintRow
               used={hintUsed}
-              onHint={() => {
-                revealOne();
-                onHint();
-              }}
+              onHint={() => void revealOne()}
               hint="We filled in a square for you."
             />
             <div className="flex items-center justify-center gap-2">
               {filled && (
-                <Button variant="secondary" size="sm" onClick={() => setChecked(true)}>
+                <Button variant="secondary" size="sm" onClick={() => void check(state.entries, true)}>
                   Check puzzle
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setState({ entries: [...solution].map((c) => (c === "#" ? "" : c)), revealed: state.revealed });
-                  onResult("failed");
-                }}
-              >
+              <Button variant="ghost" size="sm" disabled={busy} onClick={() => void revealAll()}>
                 Reveal all
               </Button>
             </div>

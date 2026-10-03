@@ -58,6 +58,7 @@ export function TodayView({ userId }: { userId: string }) {
           <ChallengeCard
             key={today}
             challenge={current.challenge}
+            play={store.states[today]}
             result={store.results[today]}
             hintUsed={!!store.hints[today]}
           />

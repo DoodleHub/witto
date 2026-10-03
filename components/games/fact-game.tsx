@@ -1,24 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
 import { CheckIcon } from "@/components/ui/icons";
-import type { FactContent } from "@/lib/challenges";
-import { useGameState } from "@/lib/progress";
+import type { FactContent, FactPlay } from "@/lib/challenges";
+import { playMove, takeHint } from "@/lib/progress";
 import { ResultBanner } from "./result-banner";
 import type { GameProps } from "./types";
 
 const LETTERS = ["A", "B", "C", "D"];
 
-export function FactGame({ dateKey, content, result, onResult, hintUsed, onHint }: GameProps<FactContent>) {
-  const [picked, setPicked] = useGameState<number | null>(dateKey, null);
-  // The hint rules out the first wrong option.
-  const eliminated = hintUsed ? content.options.findIndex((_, i) => i !== content.answer) : -1;
+export function FactGame({ dateKey, content, play, result, hintUsed }: GameProps<FactContent, FactPlay>) {
+  const [pending, setPending] = useState<number | null>(null);
+  const picked = play.picked ?? pending;
+  // The hint rules out a wrong option.
+  const eliminated = play.hint?.eliminated ?? -1;
 
-  function choose(i: number) {
-    if (result) return;
-    setPicked(i);
-    onResult(i === content.answer ? "solved" : "failed");
+  async function choose(i: number) {
+    if (result || pending !== null) return;
+    setPending(i);
+    // The server says whether it was right; until then the pick just shows as chosen.
+    await playMove(dateKey, { pick: i });
+    setPending(null);
   }
 
   return (
@@ -29,14 +33,14 @@ export function FactGame({ dateKey, content, result, onResult, hintUsed, onHint 
 
       <div className="mt-5 grid gap-2.5 sm:mt-8 sm:grid-cols-2 sm:gap-3.5">
         {content.options.map((opt, i) => {
-          const isAnswer = i === content.answer;
+          const isAnswer = i === play.solution?.answer;
           const isPicked = i === picked;
           const out = i === eliminated && !result;
           return (
             <button
               key={opt}
               type="button"
-              disabled={!!result || out}
+              disabled={!!result || out || pending !== null}
               onClick={() => choose(i)}
               className={cn(
                 "flex h-14 items-center gap-3 rounded-[14px] border px-4 text-left text-base font-medium transition-colors sm:h-[60px] sm:text-lg",
@@ -44,11 +48,13 @@ export function FactGame({ dateKey, content, result, onResult, hintUsed, onHint 
                   ? "border-success bg-success-soft text-ink"
                   : result && isPicked
                     ? "border-danger bg-danger-soft text-ink"
-                    : out
-                      ? "border-line bg-surface-muted text-ink-faint line-through"
-                      : result
-                        ? "border-line bg-surface text-ink-muted"
-                        : "border-line-strong bg-surface text-ink shadow-sm hover:border-brand hover:bg-brand-subtle",
+                    : i === pending
+                      ? "border-brand bg-brand-subtle text-ink"
+                      : out
+                        ? "border-line bg-surface-muted text-ink-faint line-through"
+                        : result
+                          ? "border-line bg-surface text-ink-muted"
+                          : "border-line-strong bg-surface text-ink shadow-sm hover:border-brand hover:bg-brand-subtle",
               )}
             >
               <span
@@ -67,15 +73,17 @@ export function FactGame({ dateKey, content, result, onResult, hintUsed, onHint 
 
       <div className="mt-5 sm:mt-7">
         {result ? (
-          <ResultBanner result={result} detail={content.explanation} />
+          <ResultBanner result={result} detail={play.solution?.explanation} />
         ) : (
           <HintRow
             used={hintUsed}
-            onHint={onHint}
+            onHint={() => takeHint(dateKey)}
             hint={
-              <>
-                It&apos;s not <strong className="font-semibold text-ink">{content.options[eliminated]}</strong>.
-              </>
+              eliminated >= 0 && (
+                <>
+                  It&apos;s not <strong className="font-semibold text-ink">{content.options[eliminated]}</strong>.
+                </>
+              )
             }
           />
         )}
