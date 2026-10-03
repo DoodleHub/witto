@@ -23,7 +23,7 @@ function formatValue(period: Period, value: number) {
   return period === "today" ? formatDuration(value) : `${value.toLocaleString("en-US")} pts`;
 }
 
-export function LeaderboardView() {
+export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   const today = useToday();
   const store = useStore();
   const [period, setPeriod] = useState<Period>("today");
@@ -45,9 +45,10 @@ export function LeaderboardView() {
         : mine.reduce((sum, [, r]) => sum + pointsFor(r.timeMs, r.hintUsed), 0);
 
     const youEntry: Entry = { id: "you", name: "You", place: "Your device", streak: streakFor(store, today), value: value ?? 0, you: true };
-    const all = value === null ? board : [...board, youEntry].sort((a, b) => (period === "today" ? a.value - b.value : b.value - a.value));
+    // Signed-out visitors only see the board; their local progress isn't theirs to rank.
+    const all = value === null || !signedIn ? board : [...board, youEntry].sort((a, b) => (period === "today" ? a.value - b.value : b.value - a.value));
     ranked = all.map((e, i) => ({ ...e, rank: i + 1 }));
-    you = ranked.find((e) => e.you) ?? { ...youEntry, rank: null };
+    if (signedIn) you = ranked.find((e) => e.you) ?? { ...youEntry, rank: null };
   }
 
   const podium = ranked.slice(0, 3);
@@ -144,6 +145,14 @@ export function LeaderboardView() {
               )}
               <Row entry={you} rank={you.rank} period={period} />
             </>
+          )}
+          {!signedIn && (
+            <li className="bg-brand-subtle px-4 py-3.5 text-center text-[15px] text-ink-secondary sm:px-6">
+              <Link href="/login?next=%2Fleaderboard" className="font-semibold text-brand-ink hover:underline">
+                Sign in
+              </Link>{" "}
+              to play today&apos;s puzzle and claim your spot.
+            </li>
           )}
         </ol>
       </Card>

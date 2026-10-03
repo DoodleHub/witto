@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Routes reachable without signing in. Everything else redirects to the sign-in flow. */
-const PUBLIC_PATHS = ["/login", "/signup"];
+const PUBLIC_PATHS = ["/login", "/signup", "/leaderboard"];
 
 /**
  * Refreshes the auth session on every request and forwards the new cookies to Server Components and the browser.
