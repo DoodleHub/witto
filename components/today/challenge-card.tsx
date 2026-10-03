@@ -39,17 +39,9 @@ export function ChallengeCard({ challenge, play, result, hintUsed, onReveal }: P
 
   return (
     <Card variant="challenge" className="px-6 pb-7 pt-6 sm:px-12 sm:pb-10 sm:pt-7">
-      <div className="flex items-start justify-between gap-2 sm:gap-4">
-        <Chip className="sm:mt-1">
-          <span className="max-[379px]:hidden">
-            Today&apos;s challenge <span aria-hidden="true">·</span>
-          </span>{" "}
-          {meta.label}
-        </Chip>
-        <p className="whitespace-nowrap pt-0.5 text-xs tabular-nums text-ink-secondary sm:pt-3 sm:text-[15px]">
-          {String(challenge.number).padStart(2, "0")} / 365
-        </p>
-      </div>
+      <Chip>
+        Today&apos;s challenge <span aria-hidden="true">·</span> {meta.label}
+      </Chip>
       <h2 className="mt-5 font-serif text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink sm:mt-8 sm:text-[52px]">
         {meta.title}
       </h2>
