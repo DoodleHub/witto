@@ -28,7 +28,6 @@ type Cache = { userId: string; store: Store | null; error: boolean };
 let cache: Cache | null = null;
 const listeners = new Set<() => void>();
 const queues = new Map<string, Promise<void>>();
-const started = new Set<string>();
 /** Latest game state per day that hasn't been sent yet; queued writes always send the newest. */
 const unsentGames = new Map<string, unknown>();
 
@@ -57,7 +56,6 @@ function toResult(row: { status: string | null; time_ms: number | null; hint_use
 async function load(userId: string) {
   if (cache?.userId === userId) return;
   queues.clear();
-  started.clear();
   unsentGames.clear();
   emit({ userId, store: null, error: false });
 
@@ -75,7 +73,6 @@ async function load(userId: string) {
   const store: Store = { results: {}, games: {}, startedAt: {}, hints: {}, states: {} };
   for (const row of data) {
     const day = row.challenge_day;
-    started.add(day);
     store.startedAt[day] = Date.parse(row.started_at);
     if (row.hint_used) store.hints[day] = true;
     if (row.game_state !== null) store.games[day] = row.game_state;
@@ -109,16 +106,10 @@ export function useProgress(userId: string): { store: Store | null; error: boole
   return current?.userId === userId ? current : { store: null, error: false };
 }
 
+/** Notes a play that revealChallenge just started; the server stamped the real started_at. */
 export function markStarted(dateKey: string) {
-  if (!cache?.store || started.has(dateKey)) return;
-  started.add(dateKey);
+  if (!cache?.store || cache.store.startedAt[dateKey] !== undefined) return;
   setStore((s) => ({ ...s, startedAt: { ...s.startedAt, [dateKey]: Date.now() } }));
-  // The server stamps started_at; a play that already exists (another tab) is left alone.
-  enqueue(dateKey, () =>
-    createClient()
-      .from("plays")
-      .upsert({ challenge_day: dateKey }, { onConflict: "user_id,challenge_day", ignoreDuplicates: true }),
-  );
 }
 
 type PlaySnapshot = { feedback: unknown; status: string | null; time_ms: number | null; hint_used: boolean; state: unknown };

@@ -157,6 +157,14 @@ export type Database = {
         }
         Returns: Json
       }
+      reveal_challenge: {
+        Args: { on_day: string }
+        Returns: {
+          content: Json
+          number: number
+          type: string
+        }[]
+      }
       server_now: { Args: never; Returns: string }
       take_hint: { Args: { context?: Json; on_day: string }; Returns: Json }
       word_marks: { Args: { answer: string; guess: string }; Returns: Json }

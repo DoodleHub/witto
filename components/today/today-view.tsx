@@ -3,16 +3,16 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Overline } from "@/components/ui/overline";
-import { fetchChallenge, type DailyChallenge } from "@/lib/challenges";
+import { fetchChallenge, revealChallenge, type DailyChallenge, type SealedChallenge } from "@/lib/challenges";
 import { formatLongDate } from "@/lib/date";
-import { streakFor, useProgress } from "@/lib/progress";
+import { markStarted, streakFor, useProgress } from "@/lib/progress";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 import { ChallengeCard, ChallengeCardSkeleton } from "./challenge-card";
 import { StreakCard } from "./streak-card";
 import { TomorrowStrip } from "./tomorrow-strip";
 
-type Loaded = { dateKey: string; challenge: DailyChallenge | null; error: boolean };
+type Loaded = { dateKey: string; challenge: DailyChallenge | SealedChallenge | null; error: boolean };
 
 export function TodayView({ userId }: { userId: string }) {
   const today = useToday();
@@ -33,6 +33,13 @@ export function TodayView({ userId }: { userId: string }) {
       cancelled = true;
     };
   }, [today]);
+
+  /** Starts the clock: the server records the play and only then hands over the content. */
+  async function reveal(dateKey: string) {
+    const challenge = await revealChallenge(createClient(), dateKey);
+    markStarted(dateKey);
+    setLoaded({ dateKey, challenge, error: false });
+  }
 
   const current = loaded?.dateKey === today ? loaded : null;
   const ready = today && store && current;
@@ -61,6 +68,7 @@ export function TodayView({ userId }: { userId: string }) {
             play={store.states[today]}
             result={store.results[today]}
             hintUsed={!!store.hints[today]}
+            onReveal={reveal}
           />
         ) : (
           <Notice title="No puzzle for this day yet.">Check back soon for a fresh challenge.</Notice>

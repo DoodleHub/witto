@@ -68,12 +68,33 @@ export type Challenge =
   | { type: "connections"; content: ConnectionsContent };
 
 export type DailyChallenge = Challenge & { number: number; dateKey: string };
+/** Today's challenge before the player reveals it: the server holds back its content until the clock starts. */
+export type SealedChallenge = { type: ChallengeType; content: null; number: number; dateKey: string };
 
-/** The challenge released for `dateKey`, or null if there isn't one (yet). */
-export async function fetchChallenge(supabase: SupabaseClient<Database>, dateKey: string): Promise<DailyChallenge | null> {
-  const { data, error } = await supabase.rpc("challenge_for_day", { on_day: dateKey }).maybeSingle();
-  if (error) throw error;
+type ChallengeRow = Database["public"]["Functions"]["challenge_for_day"]["Returns"][number];
+
+function toChallenge(data: ChallengeRow | null, dateKey: string): DailyChallenge | SealedChallenge | null {
   if (!data || !(CHALLENGE_TYPES as readonly string[]).includes(data.type)) return null;
   // The database constrains `type`; `content` is authored to match it.
-  return { number: data.number, dateKey, type: data.type, content: data.content } as DailyChallenge;
+  return { number: data.number, dateKey, type: data.type, content: data.content } as DailyChallenge | SealedChallenge;
+}
+
+/** The challenge released for `dateKey`, sealed until revealed, or null if there isn't one (yet). */
+export async function fetchChallenge(
+  supabase: SupabaseClient<Database>,
+  dateKey: string,
+): Promise<DailyChallenge | SealedChallenge | null> {
+  const { data, error } = await supabase.rpc("challenge_for_day", { on_day: dateKey }).maybeSingle();
+  if (error) throw error;
+  return toChallenge(data, dateKey);
+}
+
+/** Starts the play of `dateKey` (the server stamps the start time) and returns the challenge's content. */
+export async function revealChallenge(
+  supabase: SupabaseClient<Database>,
+  dateKey: string,
+): Promise<DailyChallenge | SealedChallenge | null> {
+  const { data, error } = await supabase.rpc("reveal_challenge", { on_day: dateKey }).maybeSingle();
+  if (error) throw error;
+  return toChallenge(data, dateKey);
 }
