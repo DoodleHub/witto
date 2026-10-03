@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Figtree, Source_Serif_4 } from "next/font/google";
 import { MobileTabBar } from "@/components/shell/mobile-tab-bar";
 import { SiteHeader } from "@/components/shell/site-header";
+import { getSessionUser } from "@/lib/auth";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -28,7 +29,8 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const user = await getSessionUser();
   return (
     <html
       lang="en"
@@ -39,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col bg-canvas font-sans text-ink">
-        <SiteHeader />
+        <SiteHeader user={user} />
         <main className="flex-1 pb-24 sm:pb-16">{children}</main>
         <MobileTabBar />
       </body>

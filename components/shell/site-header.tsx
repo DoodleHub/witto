@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import { SparkleMark } from "@/components/ui/icons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import type { SessionUser } from "@/lib/auth";
+import { AccountMenu } from "./account-menu";
 import { NAV_ITEMS } from "./nav";
 
-export function SiteHeader() {
+export function SiteHeader({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
   return (
     <header className="border-b border-transparent sm:border-line">
@@ -40,7 +41,7 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          <Avatar name="You" you size={40} />
+          <AccountMenu user={user} />
         </div>
       </div>
     </header>
