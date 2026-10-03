@@ -1,6 +1,6 @@
-// Witto service worker: caches hashed static assets and shows an offline page
-// when navigation fails. Pages themselves are always fetched from the network
-// because they depend on the signed-in user.
+// Witto service worker: caches hashed static assets, shows an offline page when navigation fails and
+// shows the daily challenge notification. Pages themselves are always fetched from the network because
+// they depend on the signed-in user.
 const VERSION = "v1";
 const STATIC_CACHE = `witto-static-${VERSION}`;
 const PRECACHE = ["/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
@@ -64,4 +64,33 @@ self.addEventListener("fetch", (event) => {
       }),
     );
   }
+});
+
+// Daily rollover notification from the daily-challenge-push Edge Function.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {}
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Witto", {
+      body: data.body || "A fresh puzzle is waiting.",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: data.tag || "daily-challenge",
+      data: { url: data.url || "/" },
+    }),
+  );
+});
+
+// Bring an open Witto window forward (it picks up the new day when it becomes visible), or open one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin);
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => new URL(w.url).origin === url.origin);
+      return open ? open.focus() : self.clients.openWindow(url.href);
+    }),
+  );
 });

@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/(auth)/actions";
 import { Avatar } from "@/components/ui/avatar";
+import { cn } from "@/components/ui/cn";
 import type { SessionUser } from "@/lib/auth";
+import { disablePush, enablePush, getPushState, type PushState } from "@/lib/push";
 
 export function AccountMenu({ user }: { user: SessionUser | null }) {
   const [open, setOpen] = useState(false);
@@ -55,6 +57,7 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
             <p className="truncate font-semibold text-ink">{user.displayName}</p>
             <p className="truncate text-sm text-ink-muted">{user.email}</p>
           </div>
+          <PushToggle />
           <form action={signOut}>
             <button
               type="submit"
@@ -67,5 +70,53 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** "New puzzle alerts": a push notification when the daily challenge rolls over. Hidden where push can't work. */
+function PushToggle() {
+  const [state, setState] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    getPushState().then(setState, () => setState("unsupported"));
+  }, []);
+
+  if (!state || state === "unsupported") return null;
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      setState(await (state === "on" ? disablePush() : enablePush()));
+    } catch (error) {
+      console.error("Failed to update new puzzle alerts", error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const on = state === "on";
+  return (
+    <button
+      type="button"
+      role="menuitemcheckbox"
+      aria-checked={on}
+      onClick={toggle}
+      disabled={busy || state === "denied"}
+      className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-secondary hover:bg-surface-muted hover:text-ink disabled:hover:bg-transparent"
+    >
+      <span>
+        New puzzle alerts
+        {state === "denied" && <span className="block text-xs text-ink-muted">Blocked in browser settings</span>}
+      </span>
+      <span
+        aria-hidden
+        className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors", on ? "bg-brand" : "bg-track", busy && "opacity-60")}
+      >
+        <span
+          className={cn("absolute top-0.5 size-4 rounded-full bg-surface shadow-sm transition-transform", on ? "translate-x-4.5" : "translate-x-0.5")}
+        />
+      </span>
+    </button>
   );
 }
