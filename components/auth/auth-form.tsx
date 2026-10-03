@@ -29,9 +29,12 @@ const SIGN_IN_FIELDS: Field[] = [
 export function AuthForm({
   mode,
   action,
+  next,
 }: {
   mode: "signIn" | "signUp";
   action: (prev: AuthFormState, formData: FormData) => Promise<AuthFormState>;
+  /** Where to go after success; carried through the form and the sign-in/sign-up switch link. */
+  next: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const signUp = mode === "signUp";
@@ -48,6 +51,7 @@ export function AuthForm({
 
       <Card className="mt-8 p-5 sm:p-7">
         <form action={formAction} noValidate className="flex flex-col gap-5">
+          <input type="hidden" name="next" value={next} />
           {fields.map((f) => {
             const error = state.errors?.[f.name];
             const describedBy = error ? `${f.name}-error` : f.hint ? `${f.name}-hint` : undefined;
@@ -96,7 +100,10 @@ export function AuthForm({
 
       <p className="mt-6 text-center text-sm text-ink-secondary">
         {signUp ? "Already have an account? " : "New to Witto? "}
-        <Link href={signUp ? "/login" : "/signup"} className="font-semibold text-brand-ink hover:underline">
+        <Link
+          href={{ pathname: signUp ? "/login" : "/signup", query: next === "/" ? {} : { next } }}
+          className="font-semibold text-brand-ink hover:underline"
+        >
           {signUp ? "Sign in" : "Create an account"}
         </Link>
       </p>

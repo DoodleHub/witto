@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { safeNext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 const PASSWORD_HINT = "At least 8 characters, with upper and lowercase letters, a number and a symbol.";
@@ -70,7 +71,7 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
     }
   }
 
-  redirect("/");
+  redirect(safeNext(formData.get("next")));
 }
 
 export async function signIn(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -89,11 +90,11 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
     };
   }
 
-  redirect("/");
+  redirect(safeNext(formData.get("next")));
 }
 
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/");
+  redirect("/login");
 }
