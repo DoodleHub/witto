@@ -29,33 +29,40 @@ function formatSolved(solved: number) {
   return `${solved.toLocaleString("en-US")} ${solved === 1 ? "puzzle" : "puzzles"} solved`;
 }
 
-type Loaded = { key: string; entries: Entry[] | null };
+/** Loaded boards by `period:day`; null when the fetch failed. */
+type Boards = Record<string, Entry[] | null>;
 
 export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   const today = useToday();
   const [period, setPeriod] = useState<Period>("today");
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const key = today ? `${period}:${today}` : null;
+  const [boards, setBoards] = useState<Boards>({});
+  // The period on screen: it lags `period` while a newly picked board is still loading, so the old one stays up
+  // instead of flashing back to skeletons.
+  const [shownPeriod, setShownPeriod] = useState<Period>(period);
+  if (shownPeriod !== period && today && `${period}:${today}` in boards) setShownPeriod(period);
 
+  // Load every period up front so switching tabs is instant.
   useEffect(() => {
-    if (!today || !key) return;
+    if (!today) return;
     let cancelled = false;
-    fetchBoard(createClient(), period, today, TOP_ROWS).then(
-      (entries) => !cancelled && setLoaded({ key, entries }),
-      (error) => {
+    const supabase = createClient();
+    for (const { id } of PERIODS) {
+      const save = (entries: Entry[] | null) => !cancelled && setBoards((b) => ({ ...b, [`${id}:${today}`]: entries }));
+      fetchBoard(supabase, id, today, TOP_ROWS).then(save, (error) => {
         console.error("Failed to load the leaderboard", error);
-        if (!cancelled) setLoaded({ key, entries: null });
-      },
-    );
+        save(null);
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, [key, period, today]);
+  }, [today]);
 
-  const current = loaded?.key === key ? loaded : null;
-  const loading = !current;
-  const failed = current?.entries === null;
-  const entries = current?.entries ?? [];
+  const shownKey = today ? `${shownPeriod}:${today}` : null;
+  const loading = !shownKey || !(shownKey in boards);
+  const switching = shownPeriod !== period;
+  const failed = !loading && boards[shownKey] === null;
+  const entries = (shownKey && boards[shownKey]) || [];
   const ranked = entries.filter((e): e is Entry & { rank: number } => e.rank !== null);
   const you = signedIn ? (entries.find((e) => e.you) ?? null) : null;
 
@@ -68,75 +75,77 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
       <LeaderboardHeader />
       <PeriodTabs period={period} onChange={setPeriod} />
 
-      {/* Podium: 2nd · 1st · 3rd */}
-      <div className="mt-8 grid grid-cols-3 items-end gap-2.5 sm:mt-10 sm:gap-4">
-        {[podium[1], podium[0], podium[2]].map((e, i) => {
-          const first = i === 1;
-          return (
-            <PodiumCard key={e?.id ?? i} first={first} you={e?.you}>
-              {e ? (
-                <>
-                  <div className="relative">
-                    {first && <CrownIcon size={22} className="absolute -top-5 left-1/2 -translate-x-1/2 text-tile-present sm:-top-6 sm:size-6" />}
-                    <Avatar name={e.name} you={e.you} tone={toneFor(e.id)} size={first ? 64 : 48} className={first ? "sm:size-20!" : "sm:size-14!"} />
+      <div aria-busy={loading || switching} className={cn("transition-opacity duration-200", switching && "opacity-60")}>
+        {/* Podium: 2nd · 1st · 3rd */}
+        <div className="mt-8 grid grid-cols-3 items-end gap-2.5 sm:mt-10 sm:gap-4">
+          {[podium[1], podium[0], podium[2]].map((e, i) => {
+            const first = i === 1;
+            return (
+              <PodiumCard key={e?.id ?? i} first={first} you={e?.you}>
+                {e ? (
+                  <>
+                    <div className="relative">
+                      {first && <CrownIcon size={22} className="absolute -top-5 left-1/2 -translate-x-1/2 text-tile-present sm:-top-6 sm:size-6" />}
+                      <Avatar name={e.name} you={e.you} tone={toneFor(e.id)} size={first ? 64 : 48} className={first ? "sm:size-20!" : "sm:size-14!"} />
+                    </div>
+                    <p className="mt-2 font-serif text-xl font-semibold text-ink sm:mt-3 sm:text-2xl">{e.rank}</p>
+                    <p className="w-full truncate text-[13px] font-semibold text-ink sm:text-base">{e.name}</p>
+                    <p className="hidden text-sm text-ink-muted sm:block">{formatSolved(e.solved)}</p>
+                    <p className={cn("mt-1.5 text-sm font-semibold tabular-nums sm:mt-2 sm:text-base", first ? "text-brand-ink" : "text-ink-secondary")}>
+                      {formatValue(shownPeriod, e.value)}
+                    </p>
+                  </>
+                ) : loading ? (
+                  <PodiumSkeleton first={first} />
+                ) : (
+                  <div className={cn("flex w-full flex-col items-center justify-center gap-2 text-ink-faint", first ? "h-40" : "h-32")}>
+                    <span className="font-serif text-xl font-semibold sm:text-2xl">{[2, 1, 3][i]}</span>
+                    <span className="text-[13px] sm:text-sm">Up for grabs</span>
                   </div>
-                  <p className="mt-2 font-serif text-xl font-semibold text-ink sm:mt-3 sm:text-2xl">{e.rank}</p>
-                  <p className="w-full truncate text-[13px] font-semibold text-ink sm:text-base">{e.name}</p>
-                  <p className="hidden text-sm text-ink-muted sm:block">{formatSolved(e.solved)}</p>
-                  <p className={cn("mt-1.5 text-sm font-semibold tabular-nums sm:mt-2 sm:text-base", first ? "text-brand-ink" : "text-ink-secondary")}>
-                    {formatValue(period, e.value)}
-                  </p>
-                </>
-              ) : loading ? (
-                <PodiumSkeleton first={first} />
-              ) : (
-                <div className={cn("flex w-full flex-col items-center justify-center gap-2 text-ink-faint", first ? "h-40" : "h-32")}>
-                  <span className="font-serif text-xl font-semibold sm:text-2xl">{[2, 1, 3][i]}</span>
-                  <span className="text-[13px] sm:text-sm">Up for grabs</span>
-                </div>
-              )}
-            </PodiumCard>
-          );
-        })}
-      </div>
+                )}
+              </PodiumCard>
+            );
+          })}
+        </div>
 
-      <Card className="mt-3 overflow-hidden sm:mt-5">
-        <TableHead period={period} />
-        <ol aria-busy={loading}>
-          {loading && <RowSkeletons />}
-          {failed && (
-            <li className="px-4 py-6 text-center text-[15px] text-ink-secondary sm:px-6" role="alert">
-              We couldn&apos;t load the leaderboard. Refresh to try again.
-            </li>
-          )}
-          {!loading && !failed && ranked.length === 0 && (
-            <li className="border-b border-line px-4 py-6 text-center text-[15px] text-ink-secondary last:border-b-0 sm:px-6">
-              {period === "today" ? "No one has solved today's puzzle yet." : "No solves yet this period."} Be the first!
-            </li>
-          )}
-          {rows.map((e) => (
-            <Row key={e.id} entry={e} rank={e.rank} period={period} />
-          ))}
-          {youBelow && you && (
-            <>
-              {you.rank !== null && (
-                <li aria-hidden="true" className="py-1 text-center text-ink-faint">
-                  ⋯
-                </li>
-              )}
-              <Row entry={you} rank={you.rank} period={period} />
-            </>
-          )}
-          {!signedIn && (
-            <li className="bg-brand-subtle px-4 py-3.5 text-center text-[15px] text-ink-secondary sm:px-6">
-              <Link href="/login?next=%2Fleaderboard" className="font-semibold text-brand-ink hover:underline">
-                Sign in
-              </Link>{" "}
-              to play today&apos;s puzzle and claim your spot.
-            </li>
-          )}
-        </ol>
-      </Card>
+        <Card className="mt-3 overflow-hidden sm:mt-5">
+          <TableHead period={shownPeriod} />
+          <ol>
+            {loading && <RowSkeletons />}
+            {failed && (
+              <li className="px-4 py-6 text-center text-[15px] text-ink-secondary sm:px-6" role="alert">
+                We couldn&apos;t load the leaderboard. Refresh to try again.
+              </li>
+            )}
+            {!loading && !failed && ranked.length === 0 && (
+              <li className="border-b border-line px-4 py-6 text-center text-[15px] text-ink-secondary last:border-b-0 sm:px-6">
+                {shownPeriod === "today" ? "No one has solved today's puzzle yet." : "No solves yet this period."} Be the first!
+              </li>
+            )}
+            {rows.map((e) => (
+              <Row key={e.id} entry={e} rank={e.rank} period={shownPeriod} />
+            ))}
+            {youBelow && you && (
+              <>
+                {you.rank !== null && (
+                  <li aria-hidden="true" className="py-1 text-center text-ink-faint">
+                    ⋯
+                  </li>
+                )}
+                <Row entry={you} rank={you.rank} period={shownPeriod} />
+              </>
+            )}
+            {!signedIn && (
+              <li className="bg-brand-subtle px-4 py-3.5 text-center text-[15px] text-ink-secondary sm:px-6">
+                <Link href="/login?next=%2Fleaderboard" className="font-semibold text-brand-ink hover:underline">
+                  Sign in
+                </Link>{" "}
+                to play today&apos;s puzzle and claim your spot.
+              </li>
+            )}
+          </ol>
+        </Card>
+      </div>
 
       <p className="mt-5 text-center text-sm text-ink-muted">
         Today ranks the fastest solves. Weekly and all-time rank points: up to 100 per puzzle, less for slower
@@ -225,15 +234,25 @@ function PodiumCard({ first, you, children }: { first: boolean; you?: boolean; c
   );
 }
 
+/** Shaped line for line like a filled podium card, so nothing shifts when the data lands. */
 function PodiumSkeleton({ first }: { first: boolean }) {
   const tone = first ? "brand" : "track";
   return (
-    <div className={cn("flex w-full flex-col items-center justify-center", first ? "min-h-40" : "min-h-32")}>
+    <>
       <Skeleton tone={tone} className={cn("rounded-full", first ? "size-16 sm:size-20" : "size-12 sm:size-14")} />
-      <Skeleton tone={tone} className="mt-3 h-5 w-6 sm:mt-4 sm:h-6" />
-      <Skeleton tone={tone} className="mt-2 h-4 w-3/4 max-w-28" />
-      <Skeleton tone={tone} className="mt-2.5 h-4 w-1/2 max-w-16" />
-    </div>
+      <div className="mt-2 font-serif text-xl sm:mt-3 sm:text-2xl">
+        <Skeleton tone={tone} className="inline-block h-[0.8em] w-6 align-middle" />
+      </div>
+      <div className="w-full text-[13px] sm:text-base">
+        <Skeleton tone={tone} className="inline-block h-[0.8em] w-3/4 max-w-28 align-middle" />
+      </div>
+      <div className="hidden text-sm sm:block">
+        <Skeleton tone={tone} className="inline-block h-[0.8em] w-2/3 max-w-32 align-middle" />
+      </div>
+      <div className="mt-1.5 text-sm sm:mt-2 sm:text-base">
+        <Skeleton tone={tone} className="inline-block h-[0.8em] w-16 align-middle" />
+      </div>
+    </>
   );
 }
 
@@ -248,8 +267,8 @@ function TableHead({ period }: { period: Period }) {
   );
 }
 
-/** Placeholder rows shaped like `Row`. */
-function RowSkeletons({ count = 5 }: { count?: number }) {
+/** Placeholder rows shaped like `Row`, one per row below the podium. */
+function RowSkeletons({ count = TOP_ROWS - 3 }: { count?: number }) {
   return Array.from({ length: count }, (_, i) => (
     <li
       key={i}
@@ -259,9 +278,13 @@ function RowSkeletons({ count = 5 }: { count?: number }) {
       <Skeleton className="h-4 w-4" />
       <span className="flex min-w-0 items-center gap-3">
         <Skeleton className="size-9 shrink-0 rounded-full" />
-        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <Skeleton className="h-4 w-32 max-w-full" />
-          <Skeleton className="h-3 w-24 max-w-full" />
+        <span className="min-w-0 flex-1">
+          <span className="block">
+            <Skeleton className="inline-block h-[0.8em] w-32 max-w-full align-middle" />
+          </span>
+          <span className="block text-[13px]">
+            <Skeleton className="inline-block h-[0.8em] w-24 max-w-full align-middle" />
+          </span>
         </span>
       </span>
       <Skeleton className="ml-auto hidden h-4 w-8 sm:block" />
