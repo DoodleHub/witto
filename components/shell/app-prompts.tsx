@@ -26,10 +26,9 @@ function snooze(key: string) {
   } catch {}
 }
 
-async function initialPrompt(signedIn: boolean): Promise<Prompt | null> {
+async function initialPrompt(): Promise<Prompt | null> {
   if (isStandalone()) {
-    if (!signedIn || snoozed(PUSH_DISMISSED_KEY) || !("Notification" in window) || Notification.permission !== "default")
-      return null;
+    if (snoozed(PUSH_DISMISSED_KEY) || !("Notification" in window) || Notification.permission !== "default") return null;
     return (await getPushState()) === "off" ? { kind: "push" } : null;
   }
   if (snoozed(INSTALL_DISMISSED_KEY)) return null;
@@ -38,18 +37,18 @@ async function initialPrompt(signedIn: boolean): Promise<Prompt | null> {
 }
 
 /**
- * Mobile-only banner above the tab bar. In the browser it suggests adding Witto to the home screen; once launched as
- * the installed app it offers new puzzle alerts. The permission request has to come from a tap (iOS ignores it
- * otherwise, and Chrome downgrades sites that prompt on load), so this asks first and the button triggers the prompt.
+ * Mobile-only, signed-in-only alert under the header. In the browser it suggests adding Witto to the home screen; once
+ * launched as the installed app it offers new puzzle alerts. The permission request has to come from a tap (iOS ignores
+ * it otherwise, and Chrome downgrades sites that prompt on load), so this asks first and the button triggers the prompt.
  */
-export function AppPrompts({ signedIn }: { signedIn: boolean }) {
+export function AppPrompts() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!window.matchMedia("(pointer: coarse)").matches) return;
     let active = true;
-    initialPrompt(signedIn).then((p) => active && p && setPrompt(p), () => {});
+    initialPrompt().then((p) => active && p && setPrompt(p), () => {});
     if (isStandalone()) return () => void (active = false);
 
     const onPrompt = (e: Event) => {
@@ -64,7 +63,7 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, [signedIn]);
+  }, []);
 
   if (!prompt) return null;
 
@@ -107,23 +106,27 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
   }[prompt.kind];
 
   return (
-    <div
-      role="dialog"
-      aria-label={copy.title}
-      className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 rounded-2xl border border-line bg-surface p-4 shadow-card sm:hidden"
-    >
-      <p className="font-semibold text-ink">{copy.title}</p>
-      <p className="mt-1 text-sm text-ink-secondary">{copy.body}</p>
-      <div className="mt-3 flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={dismiss} disabled={busy}>
-          {prompt.kind === "install-ios" ? "Got it" : "Not now"}
-        </Button>
+    <div role="status" className="mx-4 mt-1 mb-2 flex items-start gap-3 rounded-xl border border-brand-line bg-brand-soft py-3 pr-2 pl-4 sm:hidden">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-ink">{copy.title}</p>
+        <p className="mt-0.5 text-sm text-ink-secondary">{copy.body}</p>
         {prompt.kind !== "install-ios" && (
-          <Button size="sm" onClick={act} disabled={busy}>
+          <Button size="sm" onClick={act} disabled={busy} className="mt-2">
             {prompt.kind === "push" ? "Turn on alerts" : "Install"}
           </Button>
         )}
       </div>
+      <button
+        type="button"
+        onClick={dismiss}
+        disabled={busy}
+        aria-label="Dismiss"
+        className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-surface-muted hover:text-ink"
+      >
+        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
     </div>
   );
 }

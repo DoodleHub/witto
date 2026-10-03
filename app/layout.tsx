@@ -52,9 +52,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col bg-canvas font-sans text-ink">
         <SiteHeader user={user} />
+        {user && <AppPrompts />}
         <main className="flex-1 pb-24 sm:pb-16">{children}</main>
         <MobileTabBar />
-        <AppPrompts signedIn={Boolean(user)} />
         <ServiceWorkerRegistration />
       </body>
     </html>
