@@ -108,6 +108,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      challenge_today: { Args: never; Returns: string }
       display_name_available: { Args: { name: string }; Returns: boolean }
       leaderboard: {
         Args: { max_rows?: number; on_day: string; period: string }
@@ -121,6 +122,7 @@ export type Database = {
           value: number
         }[]
       }
+      server_now: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

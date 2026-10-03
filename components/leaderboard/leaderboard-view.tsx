@@ -8,7 +8,7 @@ import { cn } from "@/components/ui/cn";
 import { CrownIcon, FlameIcon } from "@/components/ui/icons";
 import { formatDuration } from "@/lib/date";
 import { fetchBoard, toneFor, type Entry, type Period } from "@/lib/leaderboard";
-import { useToday } from "@/lib/progress";
+import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 
 const PERIODS: { id: Period; label: string }[] = [

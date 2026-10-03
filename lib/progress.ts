@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { createClient } from "./supabase/client";
 import type { Json } from "./supabase/database.types";
-import { addDays, toDateKey } from "./date";
+import { addDays } from "./date";
 
 export type DayResult = {
   status: "solved" | "failed";
@@ -30,13 +30,6 @@ const started = new Set<string>();
 /** Latest game state per day that hasn't been sent yet; queued writes always send the newest. */
 const unsentGames = new Map<string, unknown>();
 
-/** Today's date key. `?date=YYYY-MM-DD` overrides it so every challenge type can be previewed. */
-export function getTodayKey(): string {
-  const override = new URLSearchParams(window.location.search).get("date");
-  if (override && /^\d{4}-\d{2}-\d{2}$/.test(override)) return override;
-  return toDateKey(new Date());
-}
-
 function emit(next: Cache) {
   cache = next;
   listeners.forEach((l) => l());
@@ -53,7 +46,6 @@ function subscribe(listener: () => void) {
 }
 
 const getCache = () => cache;
-const noopSubscribe = () => () => {};
 
 function toResult(row: { status: string | null; time_ms: number | null; hint_used: boolean }): DayResult | null {
   if (row.status !== "solved" && row.status !== "failed") return null;
@@ -110,11 +102,6 @@ export function useProgress(userId: string): { store: Store | null; error: boole
   }, [userId]);
   const current = useSyncExternalStore(subscribe, getCache, () => null);
   return current?.userId === userId ? current : { store: null, error: false };
-}
-
-/** Today's key on the client, null during server render. */
-export function useToday(): string | null {
-  return useSyncExternalStore(noopSubscribe, getTodayKey, () => null);
 }
 
 export function markStarted(dateKey: string) {
