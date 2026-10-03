@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { CrownIcon, FlameIcon } from "@/components/ui/icons";
-import { formatDuration, weekOf } from "@/lib/date";
-import { mockBoard, pointsFor, type Entry, type Period } from "@/lib/leaderboard";
-import { streakFor, useStore, useToday } from "@/lib/progress";
+import { formatDuration } from "@/lib/date";
+import { fetchBoard, toneFor, type Entry, type Period } from "@/lib/leaderboard";
+import { useToday } from "@/lib/progress";
+import { createClient } from "@/lib/supabase/client";
 
 const PERIODS: { id: Period; label: string }[] = [
   { id: "today", label: "Today" },
@@ -19,37 +19,44 @@ const PERIODS: { id: Period; label: string }[] = [
 
 const TOP_ROWS = 10;
 
-function formatValue(period: Period, value: number) {
+function formatValue(period: Period, value: number | null) {
+  if (value === null) return "–";
   return period === "today" ? formatDuration(value) : `${value.toLocaleString("en-US")} pts`;
 }
 
+function formatSolved(solved: number) {
+  return `${solved.toLocaleString("en-US")} ${solved === 1 ? "puzzle" : "puzzles"} solved`;
+}
+
+type Loaded = { key: string; entries: Entry[] | null };
+
 export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   const today = useToday();
-  const store = useStore();
   const [period, setPeriod] = useState<Period>("today");
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const key = today ? `${period}:${today}` : null;
 
-  let ranked: (Entry & { rank: number })[] = [];
-  let you: (Entry & { rank: number | null }) | null = null;
+  useEffect(() => {
+    if (!today || !key) return;
+    let cancelled = false;
+    fetchBoard(createClient(), period, today, TOP_ROWS).then(
+      (entries) => !cancelled && setLoaded({ key, entries }),
+      (error) => {
+        console.error("Failed to load the leaderboard", error);
+        if (!cancelled) setLoaded({ key, entries: null });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [key, period, today]);
 
-  if (today && store) {
-    const board = mockBoard(period, today);
-    const results = store.results;
-    const week = new Set(weekOf(today));
-    const mine = Object.entries(results).filter(([day, r]) => r.status === "solved" && (period !== "week" || week.has(day)));
-    const todays = results[today];
-    const value =
-      period === "today"
-        ? todays?.status === "solved"
-          ? todays.timeMs
-          : null
-        : mine.reduce((sum, [, r]) => sum + pointsFor(r.timeMs, r.hintUsed), 0);
-
-    const youEntry: Entry = { id: "you", name: "You", place: "Your device", streak: streakFor(store, today), value: value ?? 0, you: true };
-    // Signed-out visitors only see the board; their local progress isn't theirs to rank.
-    const all = value === null || !signedIn ? board : [...board, youEntry].sort((a, b) => (period === "today" ? a.value - b.value : b.value - a.value));
-    ranked = all.map((e, i) => ({ ...e, rank: i + 1 }));
-    if (signedIn) you = ranked.find((e) => e.you) ?? { ...youEntry, rank: null };
-  }
+  const current = loaded?.key === key ? loaded : null;
+  const loading = !current;
+  const failed = current?.entries === null;
+  const entries = current?.entries ?? [];
+  const ranked = entries.filter((e): e is Entry & { rank: number } => e.rank !== null);
+  const you = signedIn ? (entries.find((e) => e.you) ?? null) : null;
 
   const podium = ranked.slice(0, 3);
   const rows = ranked.slice(3, TOP_ROWS);
@@ -64,9 +71,6 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
         <p className="mt-2 text-[15px] text-ink-secondary sm:mt-3 sm:text-[22px]">
           See how you stack up against fellow puzzlers.
         </p>
-        <div className="mt-5 flex justify-center sm:mt-8">
-          <Chip tone="neutral">Preview · sample players</Chip>
-        </div>
       </header>
 
       <div
@@ -92,7 +96,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
 
       {/* Podium: 2nd · 1st · 3rd */}
       <div className="mt-8 grid grid-cols-3 items-end gap-2.5 sm:mt-10 sm:gap-4">
-        {(podium.length ? [podium[1], podium[0], podium[2]] : [null, null, null]).map((e, i) => {
+        {[podium[1], podium[0], podium[2]].map((e, i) => {
           const first = i === 1;
           return (
             <Card
@@ -108,17 +112,22 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                 <>
                   <div className="relative">
                     {first && <CrownIcon size={22} className="absolute -top-5 left-1/2 -translate-x-1/2 text-tile-present sm:-top-6 sm:size-6" />}
-                    <Avatar name={e.name} you={e.you} tone={Number(e.id.slice(1))} size={first ? 64 : 48} className={first ? "sm:size-20!" : "sm:size-14!"} />
+                    <Avatar name={e.name} you={e.you} tone={toneFor(e.id)} size={first ? 64 : 48} className={first ? "sm:size-20!" : "sm:size-14!"} />
                   </div>
                   <p className="mt-2 font-serif text-xl font-semibold text-ink sm:mt-3 sm:text-2xl">{e.rank}</p>
                   <p className="w-full truncate text-[13px] font-semibold text-ink sm:text-base">{e.name}</p>
-                  <p className="hidden text-sm text-ink-muted sm:block">{e.place}</p>
+                  <p className="hidden text-sm text-ink-muted sm:block">{formatSolved(e.solved)}</p>
                   <p className={cn("mt-1.5 text-sm font-semibold tabular-nums sm:mt-2 sm:text-base", first ? "text-brand-ink" : "text-ink-secondary")}>
                     {formatValue(period, e.value)}
                   </p>
                 </>
-              ) : (
+              ) : loading ? (
                 <div className={cn("w-full animate-pulse", first ? "h-40" : "h-32")} />
+              ) : (
+                <div className={cn("flex w-full flex-col items-center justify-center gap-2 text-ink-faint", first ? "h-40" : "h-32")}>
+                  <span className="font-serif text-xl font-semibold sm:text-2xl">{[2, 1, 3][i]}</span>
+                  <span className="text-[13px] sm:text-sm">Up for grabs</span>
+                </div>
               )}
             </Card>
           );
@@ -132,7 +141,17 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
           <span className="text-right">Streak</span>
           <span className="text-right">{period === "today" ? "Time" : "Points"}</span>
         </div>
-        <ol>
+        <ol aria-busy={loading}>
+          {failed && (
+            <li className="px-4 py-6 text-center text-[15px] text-ink-secondary sm:px-6" role="alert">
+              We couldn&apos;t load the leaderboard. Refresh to try again.
+            </li>
+          )}
+          {!loading && !failed && ranked.length === 0 && (
+            <li className="border-b border-line px-4 py-6 text-center text-[15px] text-ink-secondary last:border-b-0 sm:px-6">
+              {period === "today" ? "No one has solved today's puzzle yet." : "No solves yet this period."} Be the first!
+            </li>
+          )}
           {rows.map((e) => (
             <Row key={e.id} entry={e} rank={e.rank} period={period} />
           ))}
@@ -158,7 +177,8 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
       </Card>
 
       <p className="mt-5 text-center text-sm text-ink-muted">
-        These are sample players. Real rankings arrive once Witto has a community.
+        Today ranks the fastest solves. Weekly and all-time rank points: up to 100 per puzzle, less for slower
+        solves or a hint.
       </p>
     </div>
   );
@@ -175,7 +195,7 @@ function Row({ entry, rank, period }: { entry: Entry; rank: number | null; perio
     >
       <span className="text-[15px] font-semibold tabular-nums text-ink-secondary">{rank ?? "–"}</span>
       <span className="flex min-w-0 items-center gap-3">
-        <Avatar name={entry.name} you={entry.you} tone={entry.you ? 0 : Number(entry.id.slice(1))} size={36} />
+        <Avatar name={entry.name} you={entry.you} tone={toneFor(entry.id)} size={36} />
         <span className="min-w-0">
           <span className="block truncate font-semibold text-ink">
             {entry.name}
@@ -185,7 +205,7 @@ function Row({ entry, rank, period }: { entry: Entry; rank: number | null; perio
             <span className="sm:hidden">
               <FlameIcon size={13} className="-mt-0.5 inline" /> {entry.streak} ·
             </span>
-            {entry.place}
+            {formatSolved(entry.solved)}
           </span>
         </span>
       </span>

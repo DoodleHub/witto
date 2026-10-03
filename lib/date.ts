@@ -1,8 +1,3 @@
-// Challenge #1 went live on this local date.
-export const LAUNCH_DATE = "2026-10-01";
-
-const MS_PER_DAY = 86_400_000;
-
 /** Local calendar date as YYYY-MM-DD. */
 export function toDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -20,18 +15,6 @@ export function addDays(key: string, days: number): string {
   const date = fromDateKey(key);
   date.setDate(date.getDate() + days);
   return toDateKey(date);
-}
-
-/** Whole calendar days from `a` to `b` (DST-safe). */
-export function daysBetween(a: string, b: string): number {
-  const [ay, am, ad] = a.split("-").map(Number);
-  const [by, bm, bd] = b.split("-").map(Number);
-  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / MS_PER_DAY);
-}
-
-/** 1-based challenge number for a date. */
-export function challengeNumber(key: string): number {
-  return daysBetween(LAUNCH_DATE, key) + 1;
 }
 
 /** "Saturday, October 3" */
