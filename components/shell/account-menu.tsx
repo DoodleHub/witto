@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { signOut } from "@/app/(auth)/actions";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
@@ -59,17 +60,25 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
           </div>
           <PushToggle />
           <form action={signOut}>
-            <button
-              type="submit"
-              role="menuitem"
-              className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-secondary hover:bg-surface-muted hover:text-ink"
-            >
-              Sign out
-            </button>
+            <SignOutButton />
           </form>
         </div>
       )}
     </div>
+  );
+}
+
+function SignOutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      role="menuitem"
+      disabled={pending}
+      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-secondary hover:bg-surface-muted hover:text-ink disabled:cursor-wait disabled:text-ink-muted disabled:hover:bg-transparent"
+    >
+      {pending ? "Signing out…" : "Sign out"}
+    </button>
   );
 }
 

@@ -10,6 +10,7 @@ import { WordGame } from "@/components/games/word-game";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   TYPE_META,
   type AnswerPlay,
@@ -105,11 +106,12 @@ function RevealPrompt({ onReveal }: { onReveal: () => Promise<void> }) {
 
 export function ChallengeCardSkeleton() {
   return (
-    <Card variant="challenge" className="h-[420px] px-6 pt-6 sm:h-[392px] sm:px-12 sm:pt-7" aria-busy="true">
-      <div className="h-8 w-56 animate-pulse rounded-full bg-brand-soft sm:h-9 sm:w-64" />
-      <div className="mt-6 h-10 w-3/4 animate-pulse rounded-lg bg-brand-soft/70 sm:mt-9 sm:h-14" />
-      <div className="mt-5 h-6 w-full max-w-[520px] animate-pulse rounded-md bg-brand-soft/50" />
-      <div className="mt-2 h-6 w-2/3 max-w-[420px] animate-pulse rounded-md bg-brand-soft/50" />
+    <Card variant="challenge" className="h-[420px] px-6 pt-6 sm:h-[392px] sm:px-12 sm:pt-7" role="status" aria-busy="true">
+      <span className="sr-only">Loading today&apos;s challenge…</span>
+      <Skeleton tone="brand" className="h-8 w-56 rounded-full sm:h-9 sm:w-64" />
+      <Skeleton tone="brand" className="mt-6 h-10 w-3/4 rounded-lg sm:mt-9 sm:h-14" />
+      <Skeleton tone="brand" className="mt-5 h-6 w-full max-w-[520px]" />
+      <Skeleton tone="brand" className="mt-2 h-6 w-2/3 max-w-[420px]" />
     </Card>
   );
 }

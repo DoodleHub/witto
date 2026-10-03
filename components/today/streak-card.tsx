@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { CheckIcon, FlameIcon } from "@/components/ui/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fromDateKey, weekOf } from "@/lib/date";
 
 type Props = {
@@ -18,12 +19,20 @@ export function StreakCard({ today, streak, playedDays }: Props) {
     <Card className="flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:gap-0 sm:px-10 sm:py-6">
       <div className="flex items-center gap-3.5 sm:w-[240px] sm:shrink-0 sm:border-r sm:border-line sm:py-2">
         <FlameIcon size={34} className="shrink-0 sm:size-10" />
-        <div>
-          <p className="text-[15px] font-semibold text-ink sm:text-lg" aria-live="polite">
-            {today ? `${streak} day streak` : " "}
-          </p>
-          <p className="text-xs text-ink-secondary sm:text-[15px]">{today ? sub : " "}</p>
-        </div>
+        {today ? (
+          <div>
+            <p className="text-[15px] font-semibold text-ink sm:text-lg" aria-live="polite">
+              {streak} day streak
+            </p>
+            <p className="text-xs text-ink-secondary sm:text-[15px]">{sub}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5 py-0.5 sm:gap-2" role="status">
+            <span className="sr-only">Loading your streak…</span>
+            <Skeleton className="h-4 w-28 sm:h-5 sm:w-32" />
+            <Skeleton className="h-3 w-24 sm:h-4 sm:w-28" />
+          </div>
+        )}
       </div>
 
       <ol className="grid flex-1 grid-cols-7 sm:pl-8" aria-label="This week">
@@ -38,13 +47,15 @@ export function StreakCard({ today, streak, playedDays }: Props) {
               <span
                 className={cn(
                   "inline-flex size-7 items-center justify-center rounded-full sm:size-9",
-                  done
-                    ? "bg-brand text-on-brand"
-                    : isToday
-                      ? "border-2 border-brand bg-surface"
-                      : "border border-line bg-track",
+                  !day
+                    ? "animate-pulse border border-line bg-track"
+                    : done
+                      ? "bg-brand text-on-brand"
+                      : isToday
+                        ? "border-2 border-brand bg-surface"
+                        : "border border-line bg-track",
                 )}
-                aria-label={`${label}: ${done ? "played" : isToday ? "today" : "not played"}`}
+                aria-label={day ? `${label}: ${done ? "played" : isToday ? "today" : "not played"}` : label}
               >
                 {done && <CheckIcon size={16} className="sm:size-[18px]" />}
               </span>

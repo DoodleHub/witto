@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Overline } from "@/components/ui/overline";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchChallenge, revealChallenge, type DailyChallenge, type SealedChallenge } from "@/lib/challenges";
 import { formatLongDate } from "@/lib/date";
 import { refreshPlay, streakFor, useProgress } from "@/lib/progress";
@@ -66,18 +67,10 @@ export function TodayView({ userId }: { userId: string }) {
   const failed = progressError || current?.error;
 
   return (
-    <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
-      <header className="text-center">
-        <h1 className="font-serif text-[34px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink sm:text-display">
-          <span className="sm:hidden">Your daily spark.</span>
-          <span className="hidden sm:inline">A little challenge. A sharper you.</span>
-        </h1>
-        <p className="mt-2 text-[15px] text-ink-secondary sm:mt-3 sm:text-[26px]">One fresh puzzle, every day.</p>
-        <Overline className="mt-5 min-h-[1.2em] sm:mt-10">{today ? formatLongDate(today) : " "}</Overline>
-      </header>
-
-      <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-5">
-        {failed ? (
+    <TodayShell
+      today={today}
+      challenge={
+        failed ? (
           <Notice title="We couldn't load today's puzzle.">Check your connection and refresh the page.</Notice>
         ) : !ready ? (
           <ChallengeCardSkeleton />
@@ -92,14 +85,49 @@ export function TodayView({ userId }: { userId: string }) {
           />
         ) : (
           <Notice title="No puzzle for this day yet.">Check back soon for a fresh challenge.</Notice>
+        )
+      }
+      streak={
+        <StreakCard
+          today={store && today ? today : null}
+          streak={store && today ? streakFor(store, today) : 0}
+          playedDays={new Set(store ? Object.keys(store.results) : [])}
+        />
+      }
+    />
+  );
+}
+
+/** The Today page before anything has loaded; the route's loading fallback. */
+export function TodaySkeleton() {
+  return (
+    <TodayShell
+      today={null}
+      challenge={<ChallengeCardSkeleton />}
+      streak={<StreakCard today={null} streak={0} playedDays={new Set()} />}
+    />
+  );
+}
+
+function TodayShell({ today, challenge, streak }: { today: string | null; challenge: ReactNode; streak: ReactNode }) {
+  return (
+    <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
+      <header className="text-center">
+        <h1 className="font-serif text-[34px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink sm:text-display">
+          <span className="sm:hidden">Your daily spark.</span>
+          <span className="hidden sm:inline">A little challenge. A sharper you.</span>
+        </h1>
+        <p className="mt-2 text-[15px] text-ink-secondary sm:mt-3 sm:text-[26px]">One fresh puzzle, every day.</p>
+        {today ? (
+          <Overline className="mt-5 min-h-[1.2em] sm:mt-10">{formatLongDate(today)}</Overline>
+        ) : (
+          <Skeleton className="mx-auto mt-5 h-4 w-44 sm:mt-10 sm:w-56" />
         )}
-        <div className="sm:px-1">
-          <StreakCard
-            today={store && today ? today : null}
-            streak={store && today ? streakFor(store, today) : 0}
-            playedDays={new Set(store ? Object.keys(store.results) : [])}
-          />
-        </div>
+      </header>
+
+      <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-5">
+        {challenge}
+        <div className="sm:px-1">{streak}</div>
       </div>
 
       <div className="mt-8 sm:mt-10">
@@ -109,7 +137,7 @@ export function TodayView({ userId }: { userId: string }) {
   );
 }
 
-function Notice({ title, children }: { title: string; children: React.ReactNode }) {
+function Notice({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card variant="challenge" className="px-6 py-12 text-center sm:px-12 sm:py-16" role="status">
       <p className="font-serif text-2xl font-semibold text-ink sm:text-[32px]">{title}</p>

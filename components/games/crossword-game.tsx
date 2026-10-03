@@ -55,7 +55,8 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
   const [dir, setDir] = useState<Dir>("across");
   /** Squares the server said were wrong when the player last checked; null when not showing a check. */
   const [wrongCells, setWrongCells] = useState<number[] | null>(null);
-  const [busy, setBusy] = useState(false);
+  /** The board action waiting on the server, if any. */
+  const [busy, setBusy] = useState<"check" | "reveal" | null>(null);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const done = !!result;
 
@@ -164,10 +165,16 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
     commit(entries, [...state.revealed, hint.cell]);
   }
 
+  async function checkPuzzle() {
+    setBusy("check");
+    await check(state.entries, true);
+    setBusy(null);
+  }
+
   async function revealAll() {
-    setBusy(true);
+    setBusy("reveal");
     await playMove(dateKey, { give_up: true });
-    setBusy(false);
+    setBusy(null);
   }
 
   const filled = isFilled(state.entries);
@@ -286,17 +293,17 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <HintRow
               used={hintUsed}
-              onHint={() => void revealOne()}
+              onHint={revealOne}
               hint="We filled in a square for you."
             />
             <div className="flex items-center justify-center gap-2">
               {filled && (
-                <Button variant="secondary" size="sm" onClick={() => void check(state.entries, true)}>
-                  Check puzzle
+                <Button variant="secondary" size="sm" disabled={!!busy} onClick={() => void checkPuzzle()}>
+                  {busy === "check" ? "Checking…" : "Check puzzle"}
                 </Button>
               )}
-              <Button variant="ghost" size="sm" disabled={busy} onClick={() => void revealAll()}>
-                Reveal all
+              <Button variant="ghost" size="sm" disabled={!!busy} onClick={() => void revealAll()}>
+                {busy === "reveal" ? "Revealing…" : "Reveal all"}
               </Button>
             </div>
           </div>

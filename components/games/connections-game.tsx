@@ -139,7 +139,7 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed }: Ga
               Deselect all
             </Button>
             <Button disabled={selected.length !== 4 || checking} onClick={submit}>
-              Submit
+              {checking ? "Checking…" : "Submit"}
             </Button>
           </div>
         </>

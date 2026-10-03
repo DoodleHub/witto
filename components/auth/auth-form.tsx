@@ -6,6 +6,7 @@ import type { AuthField, AuthFormState } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EyeIcon, EyeOffIcon } from "@/components/ui/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TextInput } from "@/components/ui/text-input";
 
 type Field = {
@@ -125,6 +126,26 @@ export function AuthForm({
           {signUp ? "Sign in" : "Create an account"}
         </Link>
       </p>
+    </div>
+  );
+}
+
+/** Shared by sign-in and sign-up while the page loads, so it doesn't commit to either one's copy or fields. */
+export function AuthFormSkeleton() {
+  return (
+    <div className="mx-auto max-w-[440px] px-4 pt-6 sm:pt-16" role="status" aria-busy="true">
+      <span className="sr-only">Loading…</span>
+      <Skeleton className="mx-auto h-9 w-64 rounded-lg" />
+      <Skeleton className="mx-auto mt-3 h-5 w-72 max-w-full" />
+      <Card className="mt-8 flex flex-col gap-5 p-5 sm:p-7">
+        {[0, 1].map((i) => (
+          <div key={i} className="flex flex-col gap-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-12 rounded-lg" />
+          </div>
+        ))}
+        <Skeleton className="mt-1 h-12 rounded-lg" />
+      </Card>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { CrownIcon, FlameIcon } from "@/components/ui/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/date";
 import { fetchBoard, toneFor, type Entry, type Period } from "@/lib/leaderboard";
 import { useToday } from "@/lib/today";
@@ -64,50 +65,15 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
 
   return (
     <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
-      <header className="text-center">
-        <h1 className="font-serif text-[34px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink sm:text-display">
-          Who&apos;s sharpest today?
-        </h1>
-        <p className="mt-2 text-[15px] text-ink-secondary sm:mt-3 sm:text-[22px]">
-          See how you stack up against fellow puzzlers.
-        </p>
-      </header>
-
-      <div
-        role="tablist"
-        aria-label="Leaderboard period"
-        className="mx-auto mt-6 grid max-w-[420px] grid-cols-3 rounded-full border border-line bg-surface p-1 shadow-sm sm:mt-8"
-      >
-        {PERIODS.map((p) => (
-          <button
-            key={p.id}
-            role="tab"
-            aria-selected={period === p.id}
-            onClick={() => setPeriod(p.id)}
-            className={cn(
-              "h-9 rounded-full text-sm font-semibold transition-colors sm:h-10 sm:text-[15px]",
-              period === p.id ? "bg-brand text-on-brand shadow-brand" : "text-ink-secondary hover:text-ink",
-            )}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <LeaderboardHeader />
+      <PeriodTabs period={period} onChange={setPeriod} />
 
       {/* Podium: 2nd · 1st · 3rd */}
       <div className="mt-8 grid grid-cols-3 items-end gap-2.5 sm:mt-10 sm:gap-4">
         {[podium[1], podium[0], podium[2]].map((e, i) => {
           const first = i === 1;
           return (
-            <Card
-              key={e?.id ?? i}
-              variant={first ? "challenge" : "surface"}
-              className={cn(
-                "flex flex-col items-center px-2 text-center",
-                first ? "pb-5 pt-5 sm:pb-8 sm:pt-7" : "pb-4 pt-4 sm:pb-6 sm:pt-6",
-                e?.you && "ring-2 ring-brand",
-              )}
-            >
+            <PodiumCard key={e?.id ?? i} first={first} you={e?.you}>
               {e ? (
                 <>
                   <div className="relative">
@@ -122,26 +88,22 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                   </p>
                 </>
               ) : loading ? (
-                <div className={cn("w-full animate-pulse", first ? "h-40" : "h-32")} />
+                <PodiumSkeleton first={first} />
               ) : (
                 <div className={cn("flex w-full flex-col items-center justify-center gap-2 text-ink-faint", first ? "h-40" : "h-32")}>
                   <span className="font-serif text-xl font-semibold sm:text-2xl">{[2, 1, 3][i]}</span>
                   <span className="text-[13px] sm:text-sm">Up for grabs</span>
                 </div>
               )}
-            </Card>
+            </PodiumCard>
           );
         })}
       </div>
 
       <Card className="mt-3 overflow-hidden sm:mt-5">
-        <div className="hidden grid-cols-[56px_1fr_110px_110px] border-b border-line px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted sm:grid">
-          <span>Rank</span>
-          <span>Player</span>
-          <span className="text-right">Streak</span>
-          <span className="text-right">{period === "today" ? "Time" : "Points"}</span>
-        </div>
+        <TableHead period={period} />
         <ol aria-busy={loading}>
+          {loading && <RowSkeletons />}
           {failed && (
             <li className="px-4 py-6 text-center text-[15px] text-ink-secondary sm:px-6" role="alert">
               We couldn&apos;t load the leaderboard. Refresh to try again.
@@ -182,6 +144,130 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
       </p>
     </div>
   );
+}
+
+/** The leaderboard before anything has loaded; the route's loading fallback. */
+export function LeaderboardSkeleton() {
+  return (
+    <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12" role="status" aria-busy="true">
+      <span className="sr-only">Loading the leaderboard…</span>
+      <LeaderboardHeader />
+      <PeriodTabs period="today" />
+      <div className="mt-8 grid grid-cols-3 items-end gap-2.5 sm:mt-10 sm:gap-4">
+        {[false, true, false].map((first, i) => (
+          <PodiumCard key={i} first={first}>
+            <PodiumSkeleton first={first} />
+          </PodiumCard>
+        ))}
+      </div>
+      <Card className="mt-3 overflow-hidden sm:mt-5">
+        <TableHead period="today" />
+        <ol>
+          <RowSkeletons />
+        </ol>
+      </Card>
+    </div>
+  );
+}
+
+function LeaderboardHeader() {
+  return (
+    <header className="text-center">
+      <h1 className="font-serif text-[34px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink sm:text-display">
+        Who&apos;s sharpest today?
+      </h1>
+      <p className="mt-2 text-[15px] text-ink-secondary sm:mt-3 sm:text-[22px]">
+        See how you stack up against fellow puzzlers.
+      </p>
+    </header>
+  );
+}
+
+/** Without `onChange` the tabs are inert, as in the loading fallback. */
+function PeriodTabs({ period, onChange }: { period: Period; onChange?: (period: Period) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Leaderboard period"
+      className="mx-auto mt-6 grid max-w-[420px] grid-cols-3 rounded-full border border-line bg-surface p-1 shadow-sm sm:mt-8"
+    >
+      {PERIODS.map((p) => (
+        <button
+          key={p.id}
+          role="tab"
+          aria-selected={period === p.id}
+          disabled={!onChange}
+          onClick={() => onChange?.(p.id)}
+          className={cn(
+            "h-9 rounded-full text-sm font-semibold transition-colors sm:h-10 sm:text-[15px]",
+            period === p.id ? "bg-brand text-on-brand shadow-brand" : "text-ink-secondary enabled:hover:text-ink",
+          )}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PodiumCard({ first, you, children }: { first: boolean; you?: boolean; children: ReactNode }) {
+  return (
+    <Card
+      variant={first ? "challenge" : "surface"}
+      className={cn(
+        "flex flex-col items-center px-2 text-center",
+        first ? "pb-5 pt-5 sm:pb-8 sm:pt-7" : "pb-4 pt-4 sm:pb-6 sm:pt-6",
+        you && "ring-2 ring-brand",
+      )}
+    >
+      {children}
+    </Card>
+  );
+}
+
+function PodiumSkeleton({ first }: { first: boolean }) {
+  const tone = first ? "brand" : "track";
+  return (
+    <div className={cn("flex w-full flex-col items-center justify-center", first ? "min-h-40" : "min-h-32")}>
+      <Skeleton tone={tone} className={cn("rounded-full", first ? "size-16 sm:size-20" : "size-12 sm:size-14")} />
+      <Skeleton tone={tone} className="mt-3 h-5 w-6 sm:mt-4 sm:h-6" />
+      <Skeleton tone={tone} className="mt-2 h-4 w-3/4 max-w-28" />
+      <Skeleton tone={tone} className="mt-2.5 h-4 w-1/2 max-w-16" />
+    </div>
+  );
+}
+
+function TableHead({ period }: { period: Period }) {
+  return (
+    <div className="hidden grid-cols-[56px_1fr_110px_110px] border-b border-line px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted sm:grid">
+      <span>Rank</span>
+      <span>Player</span>
+      <span className="text-right">Streak</span>
+      <span className="text-right">{period === "today" ? "Time" : "Points"}</span>
+    </div>
+  );
+}
+
+/** Placeholder rows shaped like `Row`. */
+function RowSkeletons({ count = 5 }: { count?: number }) {
+  return Array.from({ length: count }, (_, i) => (
+    <li
+      key={i}
+      aria-hidden="true"
+      className="grid grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5"
+    >
+      <Skeleton className="h-4 w-4" />
+      <span className="flex min-w-0 items-center gap-3">
+        <Skeleton className="size-9 shrink-0 rounded-full" />
+        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <Skeleton className="h-4 w-32 max-w-full" />
+          <Skeleton className="h-3 w-24 max-w-full" />
+        </span>
+      </span>
+      <Skeleton className="ml-auto hidden h-4 w-8 sm:block" />
+      <Skeleton className="ml-auto h-4 w-14" />
+    </li>
+  ));
 }
 
 function Row({ entry, rank, period }: { entry: Entry; rank: number | null; period: Period }) {

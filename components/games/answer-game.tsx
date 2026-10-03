@@ -18,6 +18,7 @@ export function AnswerGame({ dateKey, content, play, result, hintUsed }: GamePro
   const [shakeKey, setShakeKey] = useState(0);
   const [checking, setChecking] = useState(false);
   const [checkFailed, setCheckFailed] = useState(false);
+  const [givingUp, setGivingUp] = useState(false);
   const reveal = play.solution?.reveal;
 
   async function submit(e: React.FormEvent) {
@@ -34,6 +35,12 @@ export function AnswerGame({ dateKey, content, play, result, hintUsed }: GamePro
       setWrong(wrong + 1);
       setShakeKey((k) => k + 1);
     }
+  }
+
+  async function giveUp() {
+    setGivingUp(true);
+    await playMove(dateKey, { give_up: true });
+    setGivingUp(false);
   }
 
   return (
@@ -63,7 +70,7 @@ export function AnswerGame({ dateKey, content, play, result, hintUsed }: GamePro
               autoComplete="off"
               className="sm:flex-1"
             />
-            <Button type="submit" size="lg" disabled={checking} className="w-full sm:w-auto sm:min-w-[190px]">
+            <Button type="submit" size="lg" disabled={checking || givingUp} className="w-full sm:w-auto sm:min-w-[190px]">
               {checking ? "Checking…" : "Submit answer"}
             </Button>
           </form>
@@ -78,10 +85,11 @@ export function AnswerGame({ dateKey, content, play, result, hintUsed }: GamePro
               {wrong >= REVEAL_AFTER && (
                 <button
                   type="button"
-                  onClick={() => playMove(dateKey, { give_up: true })}
-                  className="ml-2 font-semibold text-ink-secondary underline-offset-2 hover:underline"
+                  onClick={giveUp}
+                  disabled={givingUp}
+                  className="ml-2 font-semibold text-ink-secondary underline-offset-2 enabled:hover:underline disabled:cursor-wait disabled:text-ink-muted"
                 >
-                  Reveal the answer
+                  {givingUp ? "Revealing…" : "Reveal the answer"}
                 </button>
               )}
             </p>
