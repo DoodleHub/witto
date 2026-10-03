@@ -1,26 +1,284 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ==========================================================================
+   Witto design system — tokens
+   Semantic tokens only; components never reference raw hex values.
+   Theme resolution: [data-theme] on <html> wins, otherwise the OS preference.
+   [data-theme] also works on any element to force a theme for a subtree.
+   ========================================================================== */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas: #fbf9f6;
+  --surface: #ffffff;
+  --surface-muted: #f6f4f0;
+  --surface-raised: #ffffff;
+
+  /* Lines */
+  --line: #ece8e1;
+  --line-strong: #dcd7cf;
+
+  /* Text */
+  --ink: #17142b;
+  --ink-secondary: #45425a;
+  --ink-muted: #75718a;
+  --ink-faint: #a5a1b4;
+
+  /* Brand (violet) */
+  --brand: #7a5ae6;
+  --brand-hover: #6b4ad8;
+  --brand-press: #5c3cc6;
+  --brand-ink: #6243d2;
+  --brand-soft: #ebe4fd;
+  --brand-subtle: #f6f2ff;
+  --brand-line: #e4dcfb;
+  --on-brand: #ffffff;
+  --focus-ring: #7a5ae655;
+
+  /* Feedback */
+  --success: #23885a;
+  --success-soft: #e3f4ea;
+  --warning: #c98a12;
+  --warning-soft: #fbf0d6;
+  --danger: #cf3d43;
+  --danger-soft: #fbe7e7;
+
+  /* Game surfaces */
+  --tile-correct: #7a5ae6;
+  --tile-present: #e0a92a;
+  --tile-absent: #8c889c;
+  --track: #eeece8;
+  --block: #1f1b33;
+
+  /* Category accents (connections groups, leaderboard avatars) */
+  --cat-1: #f2d675;
+  --cat-2: #a8d5a2;
+  --cat-3: #a9c4f5;
+  --cat-4: #c9b2f7;
+
+  /* Flame */
+  --flame-from: #ffb547;
+  --flame-to: #f2552c;
+
+  /* Elevation */
+  --elev-sm: 0 1px 2px rgb(23 20 43 / 0.04);
+  --elev-md: 0 1px 2px rgb(23 20 43 / 0.04), 0 8px 24px -8px rgb(23 20 43 / 0.08);
+  --elev-card: 0 1px 2px rgb(98 67 210 / 0.05), 0 18px 40px -18px rgb(98 67 210 / 0.22);
+  --elev-brand: 0 6px 16px -6px rgb(122 90 230 / 0.55);
+
+  /* Challenge card wash */
+  --challenge-bg: linear-gradient(180deg, #f7f3ff 0%, #f3eefe 100%);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark palette, shared by the OS-preference and explicit selectors below. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --canvas: #0f0d16;
+    --surface: #17141f;
+    --surface-muted: #1e1a29;
+    --surface-raised: #1c1826;
+    --line: #2a2637;
+    --line-strong: #3a3549;
+    --ink: #f3f1fa;
+    --ink-secondary: #cbc7da;
+    --ink-muted: #9893ad;
+    --ink-faint: #6b6781;
+    --brand: #8466f0;
+    --brand-hover: #9479f4;
+    --brand-press: #7556e4;
+    --brand-ink: #bcaaff;
+    --brand-soft: #2c2452;
+    --brand-subtle: #1b1630;
+    --brand-line: #342b5c;
+    --on-brand: #ffffff;
+    --focus-ring: #9479f466;
+    --success: #4cc48b;
+    --success-soft: #16301f;
+    --warning: #f0bd4f;
+    --warning-soft: #33280f;
+    --danger: #f2777b;
+    --danger-soft: #3a1a1d;
+    --tile-correct: #8466f0;
+    --tile-present: #c99520;
+    --tile-absent: #3d394d;
+    --track: #2a2637;
+    --block: #08070c;
+    --cat-1: #8a7426;
+    --cat-2: #3f7a46;
+    --cat-3: #3f5f9e;
+    --cat-4: #6a4fb8;
+    --elev-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+    --elev-md: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+    --elev-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -18px rgb(0 0 0 / 0.6);
+    --elev-brand: 0 6px 18px -6px rgb(132 102 240 / 0.6);
+    --challenge-bg: linear-gradient(180deg, #1d1832 0%, #19152b 100%);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0f0d16;
+  --surface: #17141f;
+  --surface-muted: #1e1a29;
+  --surface-raised: #1c1826;
+  --line: #2a2637;
+  --line-strong: #3a3549;
+  --ink: #f3f1fa;
+  --ink-secondary: #cbc7da;
+  --ink-muted: #9893ad;
+  --ink-faint: #6b6781;
+  --brand: #8466f0;
+  --brand-hover: #9479f4;
+  --brand-press: #7556e4;
+  --brand-ink: #bcaaff;
+  --brand-soft: #2c2452;
+  --brand-subtle: #1b1630;
+  --brand-line: #342b5c;
+  --on-brand: #ffffff;
+  --focus-ring: #9479f466;
+  --success: #4cc48b;
+  --success-soft: #16301f;
+  --warning: #f0bd4f;
+  --warning-soft: #33280f;
+  --danger: #f2777b;
+  --danger-soft: #3a1a1d;
+  --tile-correct: #8466f0;
+  --tile-present: #c99520;
+  --tile-absent: #3d394d;
+  --track: #2a2637;
+  --block: #08070c;
+  --cat-1: #8a7426;
+  --cat-2: #3f7a46;
+  --cat-3: #3f5f9e;
+  --cat-4: #6a4fb8;
+  --elev-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --elev-md: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  --elev-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -18px rgb(0 0 0 / 0.6);
+  --elev-brand: 0 6px 18px -6px rgb(132 102 240 / 0.6);
+  --challenge-bg: linear-gradient(180deg, #1d1832 0%, #19152b 100%);
+}
+
+/* Expose tokens to Tailwind utilities: bg-canvas, text-ink, border-line, ... */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-press: var(--brand-press);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-line: var(--brand-line);
+  --color-on-brand: var(--on-brand);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-tile-correct: var(--tile-correct);
+  --color-tile-present: var(--tile-present);
+  --color-tile-absent: var(--tile-absent);
+  --color-track: var(--track);
+  --color-block: var(--block);
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+
+  /* Type scale (size / line-height) */
+  --text-display: 3.25rem;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.025em;
+  --text-headline: 2.75rem;
+  --text-headline--line-height: 1.1;
+  --text-headline--letter-spacing: -0.025em;
+  --text-title: 1.875rem;
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.02em;
+  --text-lead: 1.375rem;
+  --text-lead--line-height: 1.45;
+  --text-overline: 0.8125rem;
+  --text-overline--line-height: 1.2;
+  --text-overline--letter-spacing: 0.08em;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --shadow-sm: var(--elev-sm);
+  --shadow-md: var(--elev-md);
+  --shadow-card: var(--elev-card);
+  --shadow-brand: var(--elev-brand);
+
+  --animate-pop: pop 160ms ease-out;
+  --animate-shake: shake 360ms ease-in-out;
+  --animate-flip: flip 420ms ease-in-out both;
+  --animate-rise: rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes flip {
+  0% { transform: rotateX(0); }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Theme toggle shows the icon for the theme you'd switch to. */
+.theme-icon-light { display: none; }
+:root[data-theme="dark"] .theme-icon-light { display: block; }
+:root[data-theme="dark"] .theme-icon-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-icon-light { display: block; }
+  :root:not([data-theme="light"]) .theme-icon-dark { display: none; }
 }
