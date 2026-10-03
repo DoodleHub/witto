@@ -24,8 +24,9 @@ const OFFLINE_HTML = `<!doctype html>
 </main></body></html>`;
 
 // Shown instantly when the app opens with no other Witto window, instead of a blank screen while the server responds.
-// It immediately re-requests the same URL; that request finds this window open and goes to the network, and the splash
-// stays painted until the real page renders.
+// The real page is fetched in the background meanwhile. After SPLASH_MIN_MS (so a fast load doesn't just flicker) the
+// splash re-requests the same URL, which gets that background response, and stays painted until the real page renders.
+const SPLASH_MIN_MS = 1000;
 const SPLASH_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Witto</title>
@@ -36,11 +37,12 @@ const SPLASH_HTML = `<!doctype html>
   :root[data-theme="dark"] { color-scheme: dark; --bg: #0f0d16; --track: #2c2452; --brand: #8466f0; }
   html, body { margin: 0; height: 100%; background: var(--bg); }
   body { display: grid; place-items: center; }
-  main { display: flex; flex-direction: column; align-items: center; gap: 28px; }
+  main { display: flex; flex-direction: column; align-items: center; gap: 28px; animation: enter .4s ease-out both; }
+  @keyframes enter { from { opacity: 0; transform: scale(.92); } }
   .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--track); border-top-color: var(--brand);
              animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+  @media (prefers-reduced-motion: reduce) { main { animation-name: none; } .spinner { animation-duration: 2.4s; } }
 </style></head>
 <body><main aria-busy="true" aria-label="Loading Witto">
   <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true">
@@ -50,8 +52,11 @@ const SPLASH_HTML = `<!doctype html>
   </svg>
   <div class="spinner"></div>
 </main>
-<script>location.replace(location.href)</script>
+<script>setTimeout(function(){location.replace(location.href)},${SPLASH_MIN_MS})</script>
 </body></html>`;
+
+/** The page being fetched behind the splash, handed to the splash's follow-up navigation. */
+let splashFetch = null;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE)));
@@ -75,13 +80,26 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) =>
-        windows.length === 0
-          ? new Response(SPLASH_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } })
-          : fetch(request).catch(
-              () => new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } }),
-            ),
-      ),
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+        if (windows.length === 0) {
+          const response = fetch(request);
+          splashFetch = { url: request.url, response };
+          // Keep the worker alive until the background fetch settles, and drop it if the splash never claims it.
+          event.waitUntil(response.then(() => {}, () => {}));
+          setTimeout(() => splashFetch?.response === response && (splashFetch = null), 30_000);
+          return new Response(SPLASH_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+        }
+        let response;
+        if (splashFetch?.url === request.url) {
+          response = splashFetch.response;
+          splashFetch = null;
+        } else {
+          response = fetch(request);
+        }
+        return response.catch(
+          () => new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } }),
+        );
+      }),
     );
     return;
   }
