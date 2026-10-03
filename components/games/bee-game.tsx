@@ -22,7 +22,7 @@ const SLOTS = [
   [-0.75, -0.5],
 ];
 
-/** Words are checked on the server, which holds the word list and keeps going after the goal is reached. */
+/** Words are checked on the server, which holds the word list. The game ends once the goal is reached. */
 export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<BeeContent, BeePlay>) {
   const found = play.found ?? [];
   const [outer, setOuter] = useState(content.outer);
@@ -48,6 +48,7 @@ export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<
   }, [current, found, content, dateKey]);
 
   useEffect(() => {
+    if (result) return;
     function onKey(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -60,7 +61,7 @@ export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [submit]);
+  }, [submit, result]);
 
   function shuffle() {
     const next = [...outer];
@@ -81,69 +82,71 @@ export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<
       </p>
 
       <div className="mt-6 flex flex-col gap-8 sm:mt-8 md:flex-row md:items-start md:gap-12">
-        <div className="flex flex-col items-center md:w-[300px] md:shrink-0">
-          <div className="flex h-10 items-center text-[28px] font-semibold uppercase tracking-[0.06em]" aria-live="polite">
-            {current ? (
-              [...current].map((ch, i) => (
-                <span
-                  key={i}
-                  className={cn(ch === content.center ? "text-brand-ink" : letters.has(ch) ? "text-ink" : "text-ink-faint")}
-                >
-                  {ch}
-                </span>
-              ))
-            ) : (
-              <span className="h-8 w-0.5 animate-pulse bg-brand" />
-            )}
-          </div>
-          <p
-            key={flash?.id}
-            className={cn(
-              "mb-3 h-6 animate-rise text-sm font-semibold",
-              flash?.good ? "text-success" : "text-ink-muted",
-            )}
-          >
-            {flash?.text}
-          </p>
+        {!result && (
+          <div className="flex flex-col items-center md:w-[300px] md:shrink-0">
+            <div className="flex h-10 items-center text-[28px] font-semibold uppercase tracking-[0.06em]" aria-live="polite">
+              {current ? (
+                [...current].map((ch, i) => (
+                  <span
+                    key={i}
+                    className={cn(ch === content.center ? "text-brand-ink" : letters.has(ch) ? "text-ink" : "text-ink-faint")}
+                  >
+                    {ch}
+                  </span>
+                ))
+              ) : (
+                <span className="h-8 w-0.5 animate-pulse bg-brand" />
+              )}
+            </div>
+            <p
+              key={flash?.id}
+              className={cn(
+                "mb-3 h-6 animate-rise text-sm font-semibold",
+                flash?.good ? "text-success" : "text-ink-muted",
+              )}
+            >
+              {flash?.text}
+            </p>
 
-          <div className="relative" style={{ width: HEX_W * 2.5, height: HEX_H * 3 }}>
-            {[content.center, ...outer].map((l, i) => {
-              const [dx, dy] = i === 0 ? [0, 0] : SLOTS[i - 1];
-              return (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setCurrent((c) => c + l)}
-                  className={cn(
-                    "absolute flex items-center justify-center text-2xl font-bold uppercase transition-transform active:scale-90",
-                    i === 0 ? "bg-brand text-on-brand" : "bg-track text-ink hover:bg-brand-soft",
-                  )}
-                  style={{
-                    width: HEX_W - 6,
-                    height: HEX_H - 5,
-                    left: HEX_W * 0.75 + dx * HEX_W + 3,
-                    top: HEX_H + dy * HEX_H + 2.5,
-                    clipPath: "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)",
-                  }}
-                >
-                  {l}
-                </button>
-              );
-            })}
-          </div>
+            <div className="relative" style={{ width: HEX_W * 2.5, height: HEX_H * 3 }}>
+              {[content.center, ...outer].map((l, i) => {
+                const [dx, dy] = i === 0 ? [0, 0] : SLOTS[i - 1];
+                return (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setCurrent((c) => c + l)}
+                    className={cn(
+                      "absolute flex items-center justify-center text-2xl font-bold uppercase transition-transform active:scale-90",
+                      i === 0 ? "bg-brand text-on-brand" : "bg-track text-ink hover:bg-brand-soft",
+                    )}
+                    style={{
+                      width: HEX_W - 6,
+                      height: HEX_H - 5,
+                      left: HEX_W * 0.75 + dx * HEX_W + 3,
+                      top: HEX_H + dy * HEX_H + 2.5,
+                      clipPath: "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)",
+                    }}
+                  >
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="mt-5 flex items-center gap-2.5">
-            <Button variant="secondary" size="md" onClick={() => setCurrent((c) => c.slice(0, -1))} aria-label="Delete">
-              <BackspaceIcon size={20} />
-            </Button>
-            <Button variant="secondary" size="md" onClick={shuffle} aria-label="Shuffle letters">
-              <ShuffleIcon size={20} />
-            </Button>
-            <Button size="md" onClick={submit} className="px-7">
-              Enter
-            </Button>
+            <div className="mt-5 flex items-center gap-2.5">
+              <Button variant="secondary" size="md" onClick={() => setCurrent((c) => c.slice(0, -1))} aria-label="Delete">
+                <BackspaceIcon size={20} />
+              </Button>
+              <Button variant="secondary" size="md" onClick={shuffle} aria-label="Shuffle letters">
+                <ShuffleIcon size={20} />
+              </Button>
+              <Button size="md" onClick={submit} className="px-7">
+                Enter
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1">
           <div className="flex items-baseline justify-between">
@@ -176,7 +179,7 @@ export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<
         {result ? (
           <ResultBanner
             result={result}
-            detail={`${found.length} of ${content.total} words found — keep going if you like.`}
+            detail={`${found.length} of ${content.total} words found.`}
           />
         ) : (
           <HintRow

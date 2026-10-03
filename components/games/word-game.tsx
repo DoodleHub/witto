@@ -129,7 +129,7 @@ export function WordGame({ dateKey, play, result, hintUsed }: GameProps<WordCont
       </div>
 
       <p className="mt-3 h-5 text-center text-sm font-medium text-danger" aria-live="polite">
-        {message}
+        {!done && message}
       </p>
 
       {done ? (

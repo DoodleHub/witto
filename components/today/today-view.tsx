@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Overline } from "@/components/ui/overline";
 import { fetchChallenge, revealChallenge, type DailyChallenge, type SealedChallenge } from "@/lib/challenges";
 import { formatLongDate } from "@/lib/date";
-import { markStarted, streakFor, useProgress } from "@/lib/progress";
+import { refreshPlay, streakFor, useProgress } from "@/lib/progress";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 import { ChallengeCard, ChallengeCardSkeleton } from "./challenge-card";
@@ -34,10 +34,30 @@ export function TodayView({ userId }: { userId: string }) {
     };
   }, [today]);
 
+  // The play may have moved on in another tab or on another device while this one sat in the background.
+  useEffect(() => {
+    if (!today) return;
+    const sync = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshPlay(today);
+      fetchChallenge(createClient(), today).then(
+        (challenge) => challenge && setLoaded((prev) => (prev?.dateKey === today ? { ...prev, challenge } : prev)),
+        (error) => console.error("Failed to refresh today's challenge", error),
+      );
+    };
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, [today]);
+
   /** Starts the clock: the server records the play and only then hands over the content. */
   async function reveal(dateKey: string) {
     const challenge = await revealChallenge(createClient(), dateKey);
-    markStarted(dateKey);
+    // Picks up the play as the server has it, which may already be underway or finished elsewhere.
+    await refreshPlay(dateKey);
     setLoaded({ dateKey, challenge, error: false });
   }
 

@@ -106,10 +106,31 @@ export function useProgress(userId: string): { store: Store | null; error: boole
   return current?.userId === userId ? current : { store: null, error: false };
 }
 
-/** Notes a play that revealChallenge just started; the server stamped the real started_at. */
-export function markStarted(dateKey: string) {
-  if (!cache?.store || cache.store.startedAt[dateKey] !== undefined) return;
-  setStore((s) => ({ ...s, startedAt: { ...s.startedAt, [dateKey]: Date.now() } }));
+/**
+ * Re-reads the player's play of `dateKey` from the server, after any queued writes. The play can move on
+ * without this tab: started, hinted or finished in another tab or on another device.
+ */
+export async function refreshPlay(dateKey: string) {
+  const userId = cache?.userId;
+  if (!cache?.store || !userId) return;
+  const response = await enqueue(dateKey, () =>
+    createClient()
+      .from("plays")
+      .select("started_at, hint_used, server_state, status, time_ms")
+      .eq("user_id", userId)
+      .eq("challenge_day", dateKey)
+      .maybeSingle(),
+  );
+  const row = response?.data;
+  if (!row || cache?.userId !== userId) return;
+  const result = toResult(row);
+  setStore((s) => ({
+    ...s,
+    startedAt: { ...s.startedAt, [dateKey]: Date.parse(row.started_at) },
+    hints: row.hint_used ? { ...s.hints, [dateKey]: true } : s.hints,
+    states: { ...s.states, [dateKey]: row.server_state },
+    results: result ? { ...s.results, [dateKey]: result } : s.results,
+  }));
 }
 
 type PlaySnapshot = { feedback: unknown; status: string | null; time_ms: number | null; hint_used: boolean; state: unknown };
@@ -136,7 +157,11 @@ export async function playMove<F>(dateKey: string, move: Record<string, Json>): 
   if (!cache?.store || !userId) return null;
   const response = await enqueue(dateKey, () => createClient().rpc("play_move", { on_day: dateKey, move }));
   const snap = response?.data as PlaySnapshot | null | undefined;
-  if (!snap) return null;
+  if (!snap) {
+    // Most likely the play was finished elsewhere; show it as it stands.
+    if (response?.error) await refreshPlay(dateKey);
+    return null;
+  }
   applySnapshot(userId, dateKey, snap);
   return snap.feedback as F;
 }
@@ -150,7 +175,10 @@ export async function takeHint<H>(dateKey: string, context: Record<string, Json>
   if (!cache?.store || !userId) return null;
   const response = await enqueue(dateKey, () => createClient().rpc("take_hint", { on_day: dateKey, context }));
   const snap = response?.data as PlaySnapshot | null | undefined;
-  if (!snap) return null;
+  if (!snap) {
+    if (response?.error) await refreshPlay(dateKey);
+    return null;
+  }
   applySnapshot(userId, dateKey, snap);
   return (snap.state as { hint?: H } | null)?.hint ?? null;
 }
