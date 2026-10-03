@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/components/ui/cn";
 import { SparkleMark } from "@/components/ui/icons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import type { SessionUser } from "@/lib/auth";
 import { AccountMenu } from "./account-menu";
 import { NAV_ITEMS } from "./nav";
 
-export function SiteHeader({ user }: { user: SessionUser | null }) {
+/** `user` is undefined while the session is still loading. */
+export function SiteHeader({ user }: { user: SessionUser | null | undefined }) {
   const pathname = usePathname();
   return (
     <header className="border-b border-transparent sm:border-line">
@@ -41,7 +43,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          <AccountMenu user={user} />
+          {user === undefined ? <Skeleton className="size-10 rounded-full" /> : <AccountMenu user={user} />}
         </div>
       </div>
     </header>

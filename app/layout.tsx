@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Figtree, Source_Serif_4 } from "next/font/google";
 import { AppPrompts } from "@/components/shell/app-prompts";
 import { MobileTabBar } from "@/components/shell/mobile-tab-bar";
@@ -38,8 +39,18 @@ export const viewport: Viewport = {
   ],
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+/** Reads the session inside a Suspense boundary so the shell and each route's loading.tsx stream without waiting on it. */
+async function SessionShell() {
   const user = await getSessionUser();
+  return (
+    <>
+      <SiteHeader user={user} />
+      {user && <AppPrompts />}
+    </>
+  );
+}
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
@@ -51,8 +62,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col bg-canvas font-sans text-ink">
-        <SiteHeader user={user} />
-        {user && <AppPrompts />}
+        <Suspense fallback={<SiteHeader user={undefined} />}>
+          <SessionShell />
+        </Suspense>
         <main className="flex-1 pb-24 sm:pb-16">{children}</main>
         <MobileTabBar />
         <ServiceWorkerRegistration />
