@@ -23,6 +23,66 @@ export const TYPE_META: Record<ChallengeType, { label: string; title: string }> 
   connections: { label: "Connections", title: "Find the hidden links." },
 };
 
+/** How each challenge plays, for players who want to know before it comes around. */
+export const TYPE_GUIDE: Record<ChallengeType, { about: string; rules: string[] }> = {
+  word: {
+    about: "Find the hidden five-letter word.",
+    rules: [
+      "You get five guesses, and each must be a real word.",
+      "Violet tiles are in the right spot. Gold tiles are in the word but in the wrong spot.",
+      "A hint reveals one letter of the word.",
+    ],
+  },
+  math: {
+    about: "A number puzzle with a single answer.",
+    rules: [
+      "Type your answer and submit. Try as many times as you like.",
+      "After three misses, you can reveal the answer.",
+      "A hint gives you a nudge.",
+    ],
+  },
+  riddle: {
+    about: "A riddle to work out in words.",
+    rules: [
+      "Type your answer and submit. Try as many times as you like.",
+      "After three misses, you can reveal the answer.",
+      "A hint gives you a nudge.",
+    ],
+  },
+  fact: {
+    about: "Spot the true fact among four options.",
+    rules: [
+      "You get one pick, so choose carefully.",
+      "A short explanation follows your pick.",
+      "A hint rules out one wrong option.",
+    ],
+  },
+  crossword: {
+    about: "A 5×5 crossword with across and down clues.",
+    rules: [
+      "Tap a square to type. Tap it again to switch between across and down.",
+      "Once the grid is full, check it to see which squares are wrong.",
+      "A hint fills in one square. You can also reveal the whole grid.",
+    ],
+  },
+  bee: {
+    about: "Make words from seven letters.",
+    rules: [
+      "Words need four or more letters and must use the center letter. Letters can repeat.",
+      "Find the target number of words to finish. A pangram uses all seven letters.",
+      "A hint gives the first two letters and the length of a word you haven't found.",
+    ],
+  },
+  connections: {
+    about: "Sort sixteen words into four groups of four.",
+    rules: [
+      "Select four words that share something, then submit.",
+      "You can make four mistakes. “One away” means three of your four belong together.",
+      "A hint reveals the theme of a group.",
+    ],
+  },
+};
+
 // What players see of each challenge while playing. Answers stay on the server (see play_move).
 export type AnswerContent = { prompt: string };
 export type WordContent = Record<string, never>;
