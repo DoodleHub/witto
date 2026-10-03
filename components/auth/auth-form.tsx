@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { AuthField, AuthFormState } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EyeIcon, EyeOffIcon } from "@/components/ui/icons";
 import { TextInput } from "@/components/ui/text-input";
 
 type Field = {
@@ -39,6 +40,7 @@ export function AuthForm({
   const [state, formAction, pending] = useActionState(action, {});
   const signUp = mode === "signUp";
   const fields = signUp ? SIGN_UP_FIELDS : SIGN_IN_FIELDS;
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="mx-auto max-w-[440px] px-4 pt-6 sm:pt-16">
@@ -54,23 +56,39 @@ export function AuthForm({
           <input type="hidden" name="next" value={next} />
           {fields.map((f) => {
             const error = state.errors?.[f.name];
+            const isPassword = f.name === "password";
             const describedBy = error ? `${f.name}-error` : f.hint ? `${f.name}-hint` : undefined;
             return (
               <div key={f.name} className="flex flex-col gap-1.5">
                 <label htmlFor={f.name} className="text-sm font-semibold text-ink">
                   {f.label}
                 </label>
-                <TextInput
-                  id={f.name}
-                  name={f.name}
-                  type={f.type}
-                  autoComplete={f.autoComplete}
-                  required
-                  defaultValue={f.name === "password" ? undefined : state.values?.[f.name]}
-                  invalid={!!error}
-                  aria-invalid={!!error}
-                  aria-describedby={describedBy}
-                />
+                <div className="relative">
+                  <TextInput
+                    id={f.name}
+                    name={f.name}
+                    type={isPassword && showPassword ? "text" : f.type}
+                    autoComplete={f.autoComplete}
+                    required
+                    defaultValue={f.name === "password" ? undefined : state.values?.[f.name]}
+                    invalid={!!error}
+                    aria-invalid={!!error}
+                    aria-describedby={describedBy}
+                    className={isPassword ? "pr-12" : undefined}
+                  />
+                  {isPassword && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
+                      aria-controls={f.name}
+                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-lg text-ink-muted transition-colors hover:text-ink focus-visible:text-ink focus-visible:outline-none"
+                    >
+                      {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                    </button>
+                  )}
+                </div>
                 {error ? (
                   <p id={`${f.name}-error`} className="text-sm text-danger">
                     {error}
