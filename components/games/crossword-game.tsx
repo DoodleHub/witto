@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
@@ -68,7 +68,23 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   /** Where the current touch began, so a scroll that ends on a square isn't taken as a tap. */
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  /** When the last tap on a square ended, to catch the second half of a double tap. */
+  const lastTouchEnd = useRef(-Infinity);
+  const gridRef = useRef<HTMLDivElement>(null);
   const done = !!result;
+
+  // iOS turns a quick double tap into a text selection with a Paste/AutoFill bubble before our
+  // tap handling runs. Cancelling the second touch stops that gesture; React's touchstart
+  // listener is passive and can't, so this one is attached by hand. Lone taps and scrolls pass.
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.timeStamp - lastTouchEnd.current < 350) e.preventDefault();
+    };
+    grid.addEventListener("touchstart", onTouchStart, { passive: false });
+    return () => grid.removeEventListener("touchstart", onTouchStart);
+  }, []);
 
   const wordAt = (cell: number, d: Dir) => words.find((w) => w.dir === d && w.cells.includes(cell));
   const activeWord = wordAt(sel, dir) ?? wordAt(sel, dir === "across" ? "down" : "across");
@@ -220,6 +236,7 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
             {clue}
           </div>
           <div
+            ref={gridRef}
             className="grid grid-cols-5 gap-[2px] overflow-hidden rounded-xl border-2 border-block bg-block"
             role="grid"
             aria-label="Crossword grid"
@@ -267,6 +284,7 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                       // Cancelling the touch also stops iOS's own tap handling, including its
                       // Paste/AutoFill bubble on an already-focused field.
                       e.preventDefault();
+                      lastTouchEnd.current = e.timeStamp;
                       const start = touchStart.current;
                       const end = e.changedTouches[0];
                       if (start && Math.hypot(end.clientX - start.x, end.clientY - start.y) < 10) {
