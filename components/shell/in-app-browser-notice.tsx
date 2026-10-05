@@ -25,7 +25,6 @@ export function InAppBrowserNotice() {
 
   const escapeUrl = externalBrowserUrl(browser, window.location);
 
-  const target = browser.os === "ios" ? "Safari" : "your browser";
   const from = browser.app ? `inside ${browser.app}` : "in this in-app browser";
   // Without a working hand-off, the host app's own menu is the only way out.
   const showManual = !escapeUrl || triedEscape;
@@ -47,33 +46,17 @@ export function InAppBrowserNotice() {
   }
 
   return (
-    <div className="relative mx-4 mt-1 mb-2">
-      {/* Points up at WeChat's ··· menu. A curved, bobbing arrow so it reads as a pointer, not a tappable icon. */}
-      {browser.wechat && (
-        <svg
-          width={32}
-          height={32}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-3 right-2 text-brand-ink motion-safe:animate-bounce"
-        >
-          <path d="M5 21c7 0 13-6 13-16M14 9l4-4 4 4" />
-        </svg>
-      )}
+    <div className="mx-4 mt-1 mb-2">
       <div role="status" className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
-        <p className="text-sm font-semibold text-ink">Open Witto in {target}</p>
+        <p className="text-sm font-semibold text-ink">Open Witto in your browser</p>
         <p className="mt-0.5 text-sm text-ink-secondary">
           You’re viewing Witto {from}, so it can’t be added to your home screen and your sign-in won’t stick.
         </p>
         {showManual && (
           <p className="mt-1.5 text-sm text-ink-secondary">
-            Tap <span className="font-semibold text-ink">···</span> at the top right, then{" "}
-            <span className="font-semibold text-ink">{browser.os === "ios" ? "Open in Safari" : "Open in browser"}</span>.
+            {/* Host apps word this item differently (Safari, Default Browser, external browser…), so don't quote a label. */}
+            Tap <span className="font-semibold text-ink">···</span> at the top right, then choose the option to open in your
+            browser.
           </p>
         )}
         <div className="mt-2 flex gap-2">
