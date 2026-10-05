@@ -2,14 +2,12 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
-import { Overline } from "@/components/ui/overline";
-import { Skeleton } from "@/components/ui/skeleton";
 import { fetchChallenge, revealChallenge, type DailyChallenge, type SealedChallenge } from "@/lib/challenges";
-import { formatLongDate } from "@/lib/date";
 import { refreshPlay, streakFor, useProgress } from "@/lib/progress";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 import { ChallengeCard, ChallengeCardSkeleton } from "./challenge-card";
+import { NextChallengeCountdown } from "./next-challenge-countdown";
 import { StreakCard } from "./streak-card";
 import { TomorrowStrip } from "./tomorrow-strip";
 
@@ -68,7 +66,6 @@ export function TodayView({ userId }: { userId: string }) {
 
   return (
     <TodayShell
-      today={today}
       challenge={
         failed ? (
           <Notice title="We couldn't load today's puzzle.">Check your connection and refresh the page.</Notice>
@@ -102,14 +99,13 @@ export function TodayView({ userId }: { userId: string }) {
 export function TodaySkeleton() {
   return (
     <TodayShell
-      today={null}
       challenge={<ChallengeCardSkeleton />}
       streak={<StreakCard today={null} streak={0} playedDays={new Set()} />}
     />
   );
 }
 
-function TodayShell({ today, challenge, streak }: { today: string | null; challenge: ReactNode; streak: ReactNode }) {
+function TodayShell({ challenge, streak }: { challenge: ReactNode; streak: ReactNode }) {
   return (
     <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
       <header className="text-center">
@@ -118,11 +114,7 @@ function TodayShell({ today, challenge, streak }: { today: string | null; challe
           <span className="hidden sm:inline">A little challenge. A sharper you.</span>
         </h1>
         <p className="mt-2 text-[15px] text-ink-secondary sm:mt-3 sm:text-[26px]">One fresh puzzle, every day.</p>
-        {today ? (
-          <Overline className="mt-5 min-h-[1.2em] sm:mt-10">{formatLongDate(today)}</Overline>
-        ) : (
-          <Skeleton className="mx-auto mt-5 h-4 w-44 sm:mt-10 sm:w-56" />
-        )}
+        <NextChallengeCountdown />
       </header>
 
       <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-5">

@@ -5,14 +5,11 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { TYPE_ICONS } from "@/components/ui/icons";
 import { CHALLENGE_TYPES, TYPE_GUIDE, TYPE_META, type ChallengeType } from "@/lib/challenges";
-import { formatCountdown } from "@/lib/date";
-import { useSecondsToNextChallenge } from "@/lib/today";
 
 /** The challenge types in rotation. Tapping one opens a short guide above the icons. */
 export function TomorrowStrip() {
   const [open, setOpen] = useState<ChallengeType | null>(null);
   const [caretX, setCaretX] = useState<number | null>(null);
-  const secondsLeft = useSecondsToNextChallenge();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -56,20 +53,7 @@ export function TomorrowStrip() {
     <section aria-label="Challenge types" className="flex flex-col items-center gap-4 sm:gap-5">
       <div className="flex w-full items-center gap-3 sm:max-w-[640px] sm:gap-4">
         <span className="h-px flex-1 bg-line" />
-        <p className="text-[13px] text-ink-secondary sm:text-base">
-          A different kind of challenge{" "}
-          {secondsLeft === null ? (
-            "tomorrow."
-          ) : (
-            <>
-              in{" "}
-              <time dateTime={`PT${secondsLeft}S`} className="font-semibold tabular-nums text-ink">
-                {formatCountdown(secondsLeft)}
-              </time>
-              .
-            </>
-          )}
-        </p>
+        <p className="text-[13px] text-ink-secondary sm:text-base">A different kind of challenge tomorrow.</p>
         <span className="h-px flex-1 bg-line" />
       </div>
       <div ref={rootRef} className="relative">

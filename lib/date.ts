@@ -17,15 +17,6 @@ export function addDays(key: string, days: number): string {
   return toDateKey(date);
 }
 
-/** "Saturday, October 3" */
-export function formatLongDate(key: string): string {
-  return fromDateKey(key).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
-
 /** Monday-first week containing `key`, as date keys. */
 export function weekOf(key: string): string[] {
   const offset = (fromDateKey(key).getDay() + 6) % 7;
