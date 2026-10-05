@@ -14,9 +14,9 @@ async function initialInstall(): Promise<Install | null> {
 
 /**
  * Mobile-only alerts under the header: one to add Witto to the home screen until it's installed, and, for signed-in
- * players (the subscription is saved to their account), one for new puzzle alerts until they're on. Dismissing hides an
- * alert until the next full page load. The permission request has to come from a tap (iOS ignores it otherwise, and
- * Chrome downgrades sites that prompt on load), so this asks first and the button triggers the prompt.
+ * players (the subscription is saved to their account), one for new puzzle alerts until they're on. Neither can be
+ * dismissed. The permission request has to come from a tap (iOS ignores it otherwise, and Chrome downgrades sites that
+ * prompt on load), so this asks first and the button triggers the prompt.
  */
 export function AppPrompts({ signedIn }: { signedIn: boolean }) {
   const [install, setInstall] = useState<Install | null>(null);
@@ -87,7 +87,6 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
               Tap <ShareGlyph /> Share, then <span className="font-semibold text-ink">Add to Home Screen</span>.
             </>
           }
-          onDismiss={() => setInstall(null)}
           busy={busy}
         />
       )}
@@ -97,7 +96,6 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
           body="One tap to open today’s puzzle, right from your home screen."
           action="Install"
           onAction={() => installAndroid(install.event)}
-          onDismiss={() => setInstall(null)}
           busy={busy}
         />
       )}
@@ -107,7 +105,6 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
           body="Get a nudge when the new daily challenge drops."
           action="Turn on alerts"
           onAction={turnOnPush}
-          onDismiss={() => setPush(false)}
           busy={busy}
         />
       )}
@@ -120,19 +117,17 @@ function Alert({
   body,
   action,
   onAction,
-  onDismiss,
   busy,
 }: {
   title: string;
   body: ReactNode;
   action?: string;
   onAction?: () => void;
-  onDismiss: () => void;
   busy: boolean;
 }) {
   return (
-    <div role="status" className="flex items-start gap-3 rounded-xl border border-brand-line bg-brand-soft py-3 pr-2 pl-4">
-      <div className="min-w-0 flex-1">
+    <div role="status" className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
+      <div className="min-w-0">
         <p className="text-sm font-semibold text-ink">{title}</p>
         <p className="mt-0.5 text-sm text-ink-secondary">{body}</p>
         {action && (
@@ -141,17 +136,6 @@ function Alert({
           </Button>
         )}
       </div>
-      <button
-        type="button"
-        onClick={onDismiss}
-        disabled={busy}
-        aria-label="Dismiss"
-        className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-ink-secondary hover:bg-surface-muted hover:text-ink"
-      >
-        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
     </div>
   );
 }
