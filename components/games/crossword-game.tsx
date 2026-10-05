@@ -254,7 +254,11 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                     }}
                     readOnly={done}
                     maxLength={2}
+                    // iOS ignores autoComplete="off"; turning off autocorrect and giving a neutral name
+                    // makes its AutoFill suggestion less likely to show.
+                    name={`cell-${i}`}
                     autoComplete="off"
+                    autoCorrect="off"
                     autoCapitalize="characters"
                     spellCheck={false}
                     aria-label={`Row ${Math.floor(i / N) + 1}, column ${(i % N) + 1}`}
