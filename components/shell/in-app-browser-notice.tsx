@@ -48,10 +48,11 @@ export function InAppBrowserNotice() {
 
   return (
     <div className="relative mx-4 mt-1 mb-2">
+      {/* Points up at WeChat's ··· menu. A curved, bobbing arrow so it reads as a pointer, not a tappable icon. */}
       {browser.wechat && (
         <svg
-          width={28}
-          height={28}
+          width={32}
+          height={32}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -59,9 +60,9 @@ export function InAppBrowserNotice() {
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
-          className="absolute -top-1 right-2 text-brand-ink"
+          className="pointer-events-none absolute -top-3 right-2 text-brand-ink motion-safe:animate-bounce"
         >
-          <path d="M7 17L17 7M9 7h8v8" />
+          <path d="M5 21c7 0 13-6 13-16M14 9l4-4 4 4" />
         </svg>
       )}
       <div role="status" className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
