@@ -80,6 +80,9 @@ export function AuthForm({
                   {isPassword && (
                     <button
                       type="button"
+                      // Cancelling mousedown stops the button taking focus from the password field, so the
+                      // keyboard stays up while toggling. Keyboard users still toggle it through click.
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       aria-pressed={showPassword}
