@@ -101,8 +101,8 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
    * A tap on a square, handled here instead of by the browser so it neither scrolls the page
    * nor shows the phone's edit menu. Only a second tap on the focused square flips direction.
    */
-  function tap(i: number, el: HTMLInputElement) {
-    if (i === sel && document.activeElement === el) {
+  function tap(i: number) {
+    if (i === sel && document.activeElement === refs.current[i]) {
       setDir((d) => (d === "across" ? "down" : "across"));
     } else {
       focus(i);
@@ -250,10 +250,29 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                 <div
                   key={i}
                   className={cn(
-                    "relative aspect-square",
+                    "relative aspect-square cursor-pointer",
                     CORNERS[i],
                     i === sel ? "bg-brand-soft" : inWord ? "bg-brand-subtle" : "bg-surface",
                   )}
+                  // The square takes taps, not its input: iOS shows its Paste/AutoFill menu for taps on a focused
+                  // field however they're handled, so the input ignores touches and only receives typing.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    tap(i);
+                  }}
+                  onTouchStart={(e) => {
+                    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                  }}
+                  onTouchEnd={(e) => {
+                    // Cancelling the touch stops the browser's own tap handling (focus scrolling, the edit menu).
+                    e.preventDefault();
+                    lastTouchEnd.current = e.timeStamp;
+                    const start = touchStart.current;
+                    const end = e.changedTouches[0];
+                    if (start && Math.hypot(end.clientX - start.x, end.clientY - start.y) < 10) {
+                      tap(i);
+                    }
+                  }}
                 >
                   {numbers[i] && (
                     <span className="pointer-events-none absolute left-1 top-0.5 text-[11px] font-semibold text-ink-secondary sm:left-1.5 sm:text-xs">
@@ -273,24 +292,6 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                       const el = e.currentTarget;
                       if (el.selectionStart !== el.selectionEnd) el.setSelectionRange(el.value.length, el.value.length);
                     }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      tap(i, e.currentTarget);
-                    }}
-                    onTouchStart={(e) => {
-                      touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                    }}
-                    onTouchEnd={(e) => {
-                      // Cancelling the touch also stops iOS's own tap handling, including its
-                      // Paste/AutoFill bubble on an already-focused field.
-                      e.preventDefault();
-                      lastTouchEnd.current = e.timeStamp;
-                      const start = touchStart.current;
-                      const end = e.changedTouches[0];
-                      if (start && Math.hypot(end.clientX - start.x, end.clientY - start.y) < 10) {
-                        tap(i, e.currentTarget);
-                      }
-                    }}
                     readOnly={done}
                     maxLength={2}
                     // iOS ignores autoComplete="off"; turning off autocorrect and giving a neutral name
@@ -302,7 +303,7 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                     spellCheck={false}
                     aria-label={`Row ${Math.floor(i / N) + 1}, column ${(i % N) + 1}`}
                     className={cn(
-                      "absolute inset-0 size-full cursor-pointer bg-transparent pt-2 text-center text-[26px] font-semibold caret-transparent outline-none touch-manipulation select-none selection:bg-transparent [-webkit-touch-callout:none] sm:text-3xl",
+                      "pointer-events-none absolute inset-0 size-full bg-transparent pt-2 text-center text-[26px] font-semibold caret-transparent outline-none touch-manipulation select-none selection:bg-transparent [-webkit-touch-callout:none] sm:text-3xl",
                       CORNERS[i],
                       i === sel && "ring-2 ring-inset ring-brand",
                       wrong ? "text-danger" : revealed ? "text-brand-ink" : "text-ink",
