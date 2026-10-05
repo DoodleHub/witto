@@ -66,6 +66,8 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
   /** The board action waiting on the server, if any. */
   const [busy, setBusy] = useState<"check" | "reveal" | null>(null);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  /** Where the current touch began, so a scroll that ends on a square isn't taken as a tap. */
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const done = !!result;
 
   const wordAt = (cell: number, d: Dir) => words.find((w) => w.dir === d && w.cells.includes(cell));
@@ -77,6 +79,18 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
   function focus(i: number) {
     setSel(i);
     refs.current[i]?.focus({ preventScroll: true });
+  }
+
+  /**
+   * A tap on a square, handled here instead of by the browser so it neither scrolls the page
+   * nor shows the phone's edit menu. Only a second tap on the focused square flips direction.
+   */
+  function tap(i: number, el: HTMLInputElement) {
+    if (i === sel && document.activeElement === el) {
+      setDir((d) => (d === "across" ? "down" : "across"));
+    } else {
+      focus(i);
+    }
   }
 
   // Once the game is over the server shares the answer grid, which then fills the squares.
@@ -243,13 +257,20 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                       if (el.selectionStart !== el.selectionEnd) el.setSelectionRange(el.value.length, el.value.length);
                     }}
                     onMouseDown={(e) => {
-                      // Focus the square ourselves so the browser doesn't scroll it into view.
                       e.preventDefault();
-                      // Only a second tap on the focused square flips direction.
-                      if (i === sel && document.activeElement === e.currentTarget) {
-                        setDir((d) => (d === "across" ? "down" : "across"));
-                      } else {
-                        focus(i);
+                      tap(i, e.currentTarget);
+                    }}
+                    onTouchStart={(e) => {
+                      touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    }}
+                    onTouchEnd={(e) => {
+                      // Cancelling the touch also stops iOS's own tap handling, including its
+                      // Paste/AutoFill bubble on an already-focused field.
+                      e.preventDefault();
+                      const start = touchStart.current;
+                      const end = e.changedTouches[0];
+                      if (start && Math.hypot(end.clientX - start.x, end.clientY - start.y) < 10) {
+                        tap(i, e.currentTarget);
                       }
                     }}
                     readOnly={done}
