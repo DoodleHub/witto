@@ -282,3 +282,13 @@ body {
   :root:not([data-theme="light"]) .theme-icon-light { display: block; }
   :root:not([data-theme="light"]) .theme-icon-dark { display: none; }
 }
+
+/* Installed app (standalone) on touch devices: hide the scroll indicator; swipe scrolling is unaffected. */
+@media (display-mode: standalone) and (pointer: coarse) {
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+}
