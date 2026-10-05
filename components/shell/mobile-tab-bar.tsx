@@ -13,7 +13,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] backdrop-blur sm:hidden"
     >
       <div className="grid h-16 grid-cols-2">
         {NAV_ITEMS.map((item) => {
