@@ -73,9 +73,10 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
   const activeDir = activeWord?.dir ?? dir;
   const clue = activeWord ? content[activeWord.dir][activeWord.num] : "";
 
+  // Moving between squares shouldn't scroll the page; phones otherwise jump on every tap and letter.
   function focus(i: number) {
     setSel(i);
-    refs.current[i]?.focus();
+    refs.current[i]?.focus({ preventScroll: true });
   }
 
   // Once the game is over the server shares the answer grid, which then fills the squares.
@@ -236,10 +237,19 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                     onChange={(e) => onChange(i, e)}
                     onKeyDown={(e) => onKeyDown(i, e)}
                     onFocus={() => setSel(i)}
+                    onSelect={(e) => {
+                      // A quick double tap selects the letter; collapse it back to a caret.
+                      const el = e.currentTarget;
+                      if (el.selectionStart !== el.selectionEnd) el.setSelectionRange(el.value.length, el.value.length);
+                    }}
                     onMouseDown={(e) => {
+                      // Focus the square ourselves so the browser doesn't scroll it into view.
+                      e.preventDefault();
                       // Only a second tap on the focused square flips direction.
                       if (i === sel && document.activeElement === e.currentTarget) {
                         setDir((d) => (d === "across" ? "down" : "across"));
+                      } else {
+                        focus(i);
                       }
                     }}
                     readOnly={done}
@@ -249,7 +259,7 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                     spellCheck={false}
                     aria-label={`Row ${Math.floor(i / N) + 1}, column ${(i % N) + 1}`}
                     className={cn(
-                      "absolute inset-0 size-full cursor-pointer bg-transparent pt-2 text-center text-[26px] font-semibold caret-transparent outline-none sm:text-3xl",
+                      "absolute inset-0 size-full cursor-pointer bg-transparent pt-2 text-center text-[26px] font-semibold caret-transparent outline-none touch-manipulation select-none selection:bg-transparent [-webkit-touch-callout:none] sm:text-3xl",
                       CORNERS[i],
                       i === sel && "ring-2 ring-inset ring-brand",
                       wrong ? "text-danger" : revealed ? "text-brand-ink" : "text-ink",
