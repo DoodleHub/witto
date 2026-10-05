@@ -269,9 +269,12 @@ body {
   color: var(--ink);
 }
 
-:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
+/* In the base layer so outline utilities (e.g. outline-none) can override it. */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 /* Theme toggle shows the icon for the theme you'd switch to. */
