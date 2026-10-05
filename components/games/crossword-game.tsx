@@ -10,6 +10,13 @@ import { ResultBanner } from "./result-banner";
 import type { GameProps } from "./types";
 
 const N = 5;
+/** Corner squares follow the board's rounded inner edge (its rounded-xl radius minus the 2px border), so the selection ring isn't clipped. */
+const CORNERS: Record<number, string> = {
+  0: "rounded-tl-[calc(var(--radius-xl)-2px)]",
+  [N - 1]: "rounded-tr-[calc(var(--radius-xl)-2px)]",
+  [N * (N - 1)]: "rounded-bl-[calc(var(--radius-xl)-2px)]",
+  [N * N - 1]: "rounded-br-[calc(var(--radius-xl)-2px)]",
+};
 type Dir = "across" | "down";
 type Word = { dir: Dir; num: number; cells: number[] };
 type State = { entries: string[]; revealed: number[] };
@@ -51,7 +58,8 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
     entries: Array(N * N).fill(""),
     revealed: [],
   });
-  const [sel, setSel] = useState(() => cells.findIndex((ch) => ch !== "#"));
+  // A finished grid opens with nothing selected until the player taps a square.
+  const [sel, setSel] = useState(() => (result ? -1 : cells.findIndex((ch) => ch !== "#")));
   const [dir, setDir] = useState<Dir>("across");
   /** Squares the server said were wrong when the player last checked; null when not showing a check. */
   const [wrongCells, setWrongCells] = useState<number[] | null>(null);
@@ -187,11 +195,13 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
 
       <div className="mt-5 flex flex-col gap-6 sm:mt-8 md:flex-row md:items-start md:gap-10">
         <div className="mx-auto w-full max-w-[340px] shrink-0 md:mx-0">
-          <div className="mb-3 flex min-h-12 items-center gap-3 rounded-xl bg-brand-soft px-4 py-2.5 text-[15px] text-ink md:hidden">
-            <span className="font-semibold text-brand-ink">
-              {activeWord?.num}
-              {activeDir === "across" ? "A" : "D"}
-            </span>
+          <div className="mb-3 flex min-h-16 items-center gap-3 rounded-xl bg-brand-soft px-4 py-2.5 text-[15px] leading-snug text-ink md:hidden">
+            {activeWord && (
+              <span className="font-semibold text-brand-ink">
+                {activeWord.num}
+                {activeDir === "across" ? "A" : "D"}
+              </span>
+            )}
             {clue}
           </div>
           <div
@@ -209,7 +219,8 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                   key={i}
                   className={cn(
                     "relative aspect-square",
-                    done ? "bg-surface" : i === sel ? "bg-brand-soft" : inWord ? "bg-brand-subtle" : "bg-surface",
+                    CORNERS[i],
+                    i === sel ? "bg-brand-soft" : inWord ? "bg-brand-subtle" : "bg-surface",
                   )}
                 >
                   {numbers[i] && (
@@ -239,7 +250,8 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
                     aria-label={`Row ${Math.floor(i / N) + 1}, column ${(i % N) + 1}`}
                     className={cn(
                       "absolute inset-0 size-full cursor-pointer bg-transparent pt-2 text-center text-[26px] font-semibold caret-transparent outline-none sm:text-3xl",
-                      i === sel && !done && "ring-2 ring-inset ring-brand",
+                      CORNERS[i],
+                      i === sel && "ring-2 ring-inset ring-brand",
                       wrong ? "text-danger" : revealed ? "text-brand-ink" : "text-ink",
                     )}
                   />
