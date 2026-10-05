@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Figtree, Source_Serif_4 } from "next/font/google";
 import { AppPrompts } from "@/components/shell/app-prompts";
+import { InAppBrowserNotice } from "@/components/shell/in-app-browser-notice";
 import { MobileTabBar } from "@/components/shell/mobile-tab-bar";
 import { ServiceWorkerRegistration } from "@/components/shell/service-worker";
 import { SiteHeader } from "@/components/shell/site-header";
@@ -45,7 +46,7 @@ async function SessionShell() {
   return (
     <>
       <SiteHeader user={user} />
-      {user && <AppPrompts />}
+      <AppPrompts signedIn={Boolean(user)} />
     </>
   );
 }
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={<SiteHeader user={undefined} />}>
           <SessionShell />
         </Suspense>
+        <InAppBrowserNotice />
         <main className="flex-1 pb-24 sm:pb-16">{children}</main>
         <MobileTabBar />
         <ServiceWorkerRegistration />

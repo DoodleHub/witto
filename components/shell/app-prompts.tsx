@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { isIOS, isStandalone, type BeforeInstallPromptEvent } from "@/lib/install";
+import { detectInAppBrowser, isIOS, isStandalone, type BeforeInstallPromptEvent } from "@/lib/install";
 import { enablePush, getPushState } from "@/lib/push";
 
 type Install = { kind: "ios" } | { kind: "android"; event: BeforeInstallPromptEvent };
@@ -13,12 +13,12 @@ async function initialInstall(): Promise<Install | null> {
 }
 
 /**
- * Mobile-only, signed-in-only alerts under the header: one to add Witto to the home screen until it's installed, and
- * one for new puzzle alerts until they're on. Dismissing hides an alert until the next full page load. The permission
- * request has to come from a tap (iOS ignores it otherwise, and Chrome downgrades sites that prompt on load), so this
- * asks first and the button triggers the prompt.
+ * Mobile-only alerts under the header: one to add Witto to the home screen until it's installed, and, for signed-in
+ * players (the subscription is saved to their account), one for new puzzle alerts until they're on. Dismissing hides an
+ * alert until the next full page load. The permission request has to come from a tap (iOS ignores it otherwise, and
+ * Chrome downgrades sites that prompt on load), so this asks first and the button triggers the prompt.
  */
-export function AppPrompts() {
+export function AppPrompts({ signedIn }: { signedIn: boolean }) {
   const [install, setInstall] = useState<Install | null>(null);
   const [push, setPush] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -27,8 +27,9 @@ export function AppPrompts() {
     if (!window.matchMedia("(pointer: coarse)").matches) return;
     let active = true;
     // "denied" can only be undone in browser settings, so a button here wouldn't do anything.
-    getPushState().then((state) => active && setPush(state === "off"), () => {});
-    if (isStandalone()) return () => void (active = false);
+    if (signedIn) getPushState().then((state) => active && setPush(state === "off"), () => {});
+    // In-app browsers can't install; InAppBrowserNotice asks them to switch instead.
+    if (isStandalone() || detectInAppBrowser()) return () => void (active = false);
 
     initialInstall().then((i) => active && i && setInstall(i), () => {});
 
@@ -44,7 +45,7 @@ export function AppPrompts() {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [signedIn]);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -73,7 +74,8 @@ export function AppPrompts() {
       setPush(false);
     });
 
-  if (!install && !push) return null;
+  const showPush = push && signedIn;
+  if (!install && !showPush) return null;
 
   return (
     <div className="mx-4 mt-1 mb-2 flex flex-col gap-2 sm:hidden">
@@ -99,7 +101,7 @@ export function AppPrompts() {
           busy={busy}
         />
       )}
-      {push && (
+      {showPush && (
         <Alert
           title="Never miss a puzzle"
           body="Get a nudge when the new daily challenge drops."
