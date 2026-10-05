@@ -75,3 +75,45 @@ const getToday = () => todayKey;
 export function useToday(): string | null {
   return useSyncExternalStore(subscribe, getToday, () => null);
 }
+
+/** Whole seconds until the next challenge, recomputed on each tick of the server clock. */
+let secondsLeft: number | null = null;
+let tickTimer: ReturnType<typeof setTimeout> | undefined;
+const tickListeners = new Set<() => void>();
+const noop = () => {};
+let unsubscribeToday: (() => void) | undefined;
+
+function tick() {
+  const now = Date.now() + offsetMs;
+  // Counts down to 00:00:00 in the day's last second, then flips to 23:59:59 as the new challenge lands.
+  const next = synced ? Math.floor((DAY_MS - 1 - (now % DAY_MS)) / 1000) : null;
+  if (next !== secondsLeft) {
+    secondsLeft = next;
+    tickListeners.forEach((l) => l());
+  }
+  // Land just after each server-clock second so the display flips with it.
+  tickTimer = setTimeout(tick, 1000 - (now % 1000) + 5);
+}
+
+function subscribeTick(listener: () => void) {
+  tickListeners.add(listener);
+  if (tickListeners.size === 1) {
+    // Rides on the day store so the server clock gets read and re-read on wake.
+    unsubscribeToday = subscribe(noop);
+    tick();
+  }
+  return () => {
+    tickListeners.delete(listener);
+    if (tickListeners.size === 0) {
+      clearTimeout(tickTimer);
+      unsubscribeToday?.();
+    }
+  };
+}
+
+const getSecondsLeft = () => secondsLeft;
+
+/** Seconds until the next challenge by the server's clock; null during server render and until the clock is read. */
+export function useSecondsToNextChallenge(): number | null {
+  return useSyncExternalStore(subscribeTick, getSecondsLeft, () => null);
+}
