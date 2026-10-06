@@ -27,6 +27,9 @@ export function Sheet({
     const dialog = dialogRef.current;
     if (!dialog || !open) return;
     dialog.showModal();
+    // showModal focuses the first focusable element, even one with tabIndex -1, and browsers ring it.
+    // Focusing the dialog itself avoids that, and Tab still leads into the content from here.
+    dialog.focus();
     // A modal dialog doesn't stop the page behind it from scrolling.
     const root = document.documentElement;
     const overflow = root.style.overflow;
@@ -41,12 +44,13 @@ export function Sheet({
     <dialog
       ref={dialogRef}
       aria-labelledby={labelledBy}
+      tabIndex={-1}
       // Escape fires `close` on the dialog itself, so route it through the parent's state.
       onClose={onClose}
       // The inner panel fills the dialog, so a click that lands on the dialog itself is on the backdrop.
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className={cn(
-        "m-0 mt-auto max-h-[88dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-[22px] border border-line bg-surface text-ink shadow-card backdrop:bg-scrim open:animate-rise",
+        "m-0 mt-auto max-h-[88dvh] outline-none w-full max-w-none overflow-y-auto overscroll-contain rounded-t-[22px] border border-line bg-surface text-ink shadow-card backdrop:bg-scrim open:animate-rise",
         "sm:m-auto sm:max-w-[440px] sm:rounded-[22px]",
         className,
       )}
