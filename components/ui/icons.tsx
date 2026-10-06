@@ -22,20 +22,33 @@ function Base({ size = 24, children, ...props }: IconProps) {
   );
 }
 
-export function SparkleMark({ size = 32, ...props }: IconProps) {
+/** A W traced through five dots, like a connect-the-dots puzzle; the gold dot is today's. Mirrors `app/icon.svg`. */
+export function WittoMark({ size = 32, ...props }: IconProps) {
   const id = useId();
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...props}>
       <defs>
-        <linearGradient id={id} x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+        <linearGradient id={id} x1="2" y1="0" x2="22" y2="24" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#9b7ff7" />
-          <stop offset="1" stopColor="#6a45dc" />
+          <stop offset="1" stopColor="#5c3cc6" />
         </linearGradient>
       </defs>
-      <path
-        d="M12 1.5c.7 5.2 3.2 8.1 10.5 10.5-7.3 2.4-9.8 5.3-10.5 10.5C11.3 17.3 8.8 14.4 1.5 12 8.8 9.6 11.3 6.7 12 1.5z"
-        fill={`url(#${id})`}
+      <rect width="24" height="24" rx="5.5" fill={`url(#${id})`} />
+      <polyline
+        points="4.44,7.68 8.22,16.32 12,9.84 15.78,16.32 19.56,7.68"
+        fill="none"
+        stroke="#fff"
+        strokeWidth={1.84}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
+      <g fill="#fff">
+        <circle cx="4.44" cy="7.68" r="1.89" />
+        <circle cx="8.22" cy="16.32" r="1.89" />
+        <circle cx="12" cy="9.84" r="1.89" />
+        <circle cx="15.78" cy="16.32" r="1.89" />
+      </g>
+      <circle cx="19.56" cy="7.68" r="1.89" fill="#ffd27a" />
     </svg>
   );
 }

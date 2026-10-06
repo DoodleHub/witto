@@ -4,13 +4,17 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { signOut } from "@/app/(auth)/actions";
+import { PlayerSheet } from "@/components/leaderboard/player-sheet";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import type { SessionUser } from "@/lib/auth";
 import { disablePush, enablePush, getPushState, type PushState } from "@/lib/push";
+import { useToday } from "@/lib/today";
 
 export function AccountMenu({ user }: { user: SessionUser | null }) {
   const [open, setOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const today = useToday();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,12 +62,28 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
             <p className="truncate font-semibold text-ink">{user.displayName}</p>
             <p className="truncate text-sm text-ink-muted">{user.email}</p>
           </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setStatsOpen(true);
+            }}
+            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-secondary hover:bg-surface-muted hover:text-ink"
+          >
+            Your stats
+          </button>
           <PushToggle />
           <form action={signOut}>
             <SignOutButton />
           </form>
         </div>
       )}
+      <PlayerSheet
+        player={statsOpen ? { id: user.id, name: user.displayName, you: true } : null}
+        today={today}
+        onClose={() => setStatsOpen(false)}
+      />
     </div>
   );
 }

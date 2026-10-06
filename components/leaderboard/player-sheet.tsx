@@ -28,10 +28,18 @@ function plural(n: number, word: string) {
 }
 
 /**
- * A player's record, opened from the leaderboard: a bottom sheet on phones and a centred dialog on wider screens.
- * The leaderboard row supplies the name straight away, and the rest loads behind it.
+ * A player's record, opened from the leaderboard or the account menu: a bottom sheet on phones and a centred dialog on wider screens.
+ * The caller supplies the name straight away, and the rest loads behind it.
  */
-export function PlayerSheet({ player, today, onClose }: { player: Entry | null; today: string | null; onClose: () => void }) {
+export function PlayerSheet({
+  player,
+  today,
+  onClose,
+}: {
+  player: Pick<Entry, "id" | "name" | "you"> | null;
+  today: string | null;
+  onClose: () => void;
+}) {
   const [profiles, setProfiles] = useState<Profiles>({});
   const key = player && today ? `${player.id}:${today}` : null;
 

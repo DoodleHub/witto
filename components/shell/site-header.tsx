@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/components/ui/cn";
-import { SparkleMark } from "@/components/ui/icons";
+import { WittoMark } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import type { SessionUser } from "@/lib/auth";
@@ -17,7 +17,7 @@ export function SiteHeader({ user }: { user: SessionUser | null | undefined }) {
     <header className="border-b border-transparent sm:border-line">
       <div className="relative mx-auto flex h-16 max-w-[1120px] items-center justify-between px-4 sm:h-[72px] sm:px-8">
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5" aria-label="Witto home">
-          <SparkleMark size={30} className="sm:size-9" />
+          <WittoMark size={30} className="sm:size-9" />
           <span className="text-2xl font-semibold tracking-[-0.01em] text-ink sm:text-[28px]">Witto</span>
         </Link>
 

@@ -17,7 +17,7 @@ import {
   MoonIcon,
   PodiumIcon,
   ShuffleIcon,
-  SparkleMark,
+  WittoMark,
   SunIcon,
   TYPE_ICONS,
 } from "@/components/ui/icons";
@@ -170,7 +170,7 @@ export function DesignSystemView() {
     <div className="mx-auto max-w-[1040px] px-4 pb-16 pt-8 sm:px-8 sm:pt-14">
       <header>
         <div className="flex items-center gap-3">
-          <SparkleMark size={40} />
+          <WittoMark size={40} />
           <Overline>Witto · Design system v1</Overline>
         </div>
         <h1 className="mt-5 font-serif text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] sm:text-display">
@@ -382,7 +382,7 @@ export function DesignSystemView() {
             </div>
             <p className="mb-4 mt-8 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Interface & brand</p>
             <div className="flex flex-wrap items-center gap-5 text-ink-secondary">
-              <SparkleMark size={32} />
+              <WittoMark size={32} />
               <FlameIcon size={32} />
               <HomeIcon size={26} />
               <PodiumIcon size={26} />

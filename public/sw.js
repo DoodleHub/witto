@@ -1,7 +1,7 @@
 // Witto service worker: caches hashed static assets, shows an offline page when navigation fails and
 // shows the daily challenge notification. Pages themselves are always fetched from the network because
 // they depend on the signed-in user, so a cold launch first gets an instant splash that then loads the real page.
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `witto-static-${VERSION}`;
 const PRECACHE = ["/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
