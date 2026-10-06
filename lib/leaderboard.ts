@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ChallengeType } from "./challenges";
 import type { Database } from "./supabase/database.types";
 
 export type Period = "today" | "week" | "all";
@@ -35,6 +36,45 @@ export async function fetchBoard(
     value: (row.value as number | null) ?? null,
     you: row.is_you,
   }));
+}
+
+/** One player's public record, as returned by the `player_profile` SQL function. Times are in ms. */
+export type PlayerProfile = {
+  display_name: string;
+  /** UTC date key. */
+  joined_on: string;
+  played: number;
+  solved: number;
+  hints: number;
+  points: number;
+  fastest_ms: number | null;
+  streak: number;
+  best_streak: number;
+  /** Only the types they've finished at least once. */
+  types: { type: ChallengeType; played: number; solved: number; best_ms: number | null }[];
+  /** Their latest finished plays, newest first. */
+  recent: {
+    day: string;
+    number: number;
+    type: ChallengeType;
+    status: "solved" | "failed";
+    time_ms: number;
+    hint_used: boolean;
+    /** Null for a failed play. */
+    points: number | null;
+  }[];
+};
+
+/** A player's record as of `dateKey`, or null if they don't exist. */
+export async function fetchPlayerProfile(
+  supabase: SupabaseClient<Database>,
+  playerId: string,
+  dateKey: string,
+): Promise<PlayerProfile | null> {
+  const { data, error } = await supabase.rpc("player_profile", { player: playerId, on_day: dateKey });
+  if (error) throw error;
+  // The function builds this shape with jsonb_build_object, which the generated types can only call Json.
+  return data as PlayerProfile | null;
 }
 
 /** A stable avatar color per player. */

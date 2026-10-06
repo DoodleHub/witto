@@ -189,6 +189,10 @@ export type Database = {
         }
         Returns: Json
       }
+      player_profile: {
+        Args: { on_day: string; player: string }
+        Returns: Json
+      }
       reveal_challenge: {
         Args: { on_day: string }
         Returns: {

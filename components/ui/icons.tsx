@@ -69,6 +69,12 @@ export const CheckIcon = (p: IconProps) => (
   </Base>
 );
 
+export const CloseIcon = (p: IconProps) => (
+  <Base strokeWidth={2} {...p}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </Base>
+);
+
 export const LightbulbIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />

@@ -5,12 +5,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
-import { CrownIcon, FlameIcon } from "@/components/ui/icons";
+import { CheckIcon, CrownIcon, FlameIcon } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/date";
 import { fetchBoard, toneFor, type Entry, type Period } from "@/lib/leaderboard";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
+import { PlayerSheet } from "./player-sheet";
 
 const PERIODS: { id: Period; label: string }[] = [
   { id: "today", label: "Today" },
@@ -39,6 +40,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   // The period on screen: it lags `period` while a newly picked board is still loading, so the old one stays up
   // instead of flashing back to skeletons.
   const [shownPeriod, setShownPeriod] = useState<Period>(period);
+  const [selected, setSelected] = useState<Entry | null>(null);
   if (shownPeriod !== period && today && `${period}:${today}` in boards) setShownPeriod(period);
 
   // Load every period up front so switching tabs is instant.
@@ -81,7 +83,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
           {[podium[1], podium[0], podium[2]].map((e, i) => {
             const first = i === 1;
             return (
-              <PodiumCard key={e?.id ?? i} first={first} you={e?.you}>
+              <PodiumCard key={e?.id ?? i} first={first} you={e?.you} interactive={!!e}>
                 {e ? (
                   <>
                     <div className="relative">
@@ -89,8 +91,10 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                       <Avatar name={e.name} you={e.you} tone={toneFor(e.id)} size={first ? 64 : 48} className={first ? "sm:size-20!" : "sm:size-14!"} />
                     </div>
                     <p className="mt-2 font-serif text-xl font-semibold text-ink sm:mt-3 sm:text-2xl">{e.rank}</p>
-                    <p className="w-full truncate text-[13px] font-semibold text-ink sm:text-base">{e.name}</p>
-                    <p className="hidden text-sm text-ink-muted sm:block">{formatSolved(e.solved)}</p>
+                    <p className="w-full truncate text-[13px] font-semibold text-ink sm:text-base">
+                      <PlayerButton name={e.name} onClick={() => setSelected(e)} />
+                    </p>
+                    <PodiumStats streak={e.streak} solved={e.solved} />
                     <p className={cn("mt-1.5 text-sm font-semibold tabular-nums sm:mt-2 sm:text-base", first ? "text-brand-ink" : "text-ink-secondary")}>
                       {formatValue(shownPeriod, e.value)}
                     </p>
@@ -123,7 +127,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
               </li>
             )}
             {rows.map((e) => (
-              <Row key={e.id} entry={e} rank={e.rank} period={shownPeriod} />
+              <Row key={e.id} entry={e} rank={e.rank} period={shownPeriod} onOpen={() => setSelected(e)} />
             ))}
             {youBelow && you && (
               <>
@@ -132,7 +136,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                     ⋯
                   </li>
                 )}
-                <Row entry={you} rank={you.rank} period={shownPeriod} />
+                <Row entry={you} rank={you.rank} period={shownPeriod} onOpen={() => setSelected(you)} />
               </>
             )}
             {!signedIn && (
@@ -149,8 +153,10 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
 
       <p className="mt-5 text-center text-sm text-ink-muted">
         Today ranks the fastest solves. Weekly and all-time rank points: up to 100 per puzzle, less for slower
-        solves or a hint.
+        solves or a hint. Tap a player to see their record.
       </p>
+
+      <PlayerSheet player={selected} today={today} onClose={() => setSelected(null)} />
     </div>
   );
 }
@@ -219,18 +225,48 @@ function PeriodTabs({ period, onChange }: { period: Period; onChange?: (period: 
   );
 }
 
-function PodiumCard({ first, you, children }: { first: boolean; you?: boolean; children: ReactNode }) {
+function PodiumCard({
+  first,
+  you,
+  interactive,
+  children,
+}: {
+  first: boolean;
+  you?: boolean;
+  interactive?: boolean;
+  children: ReactNode;
+}) {
   return (
     <Card
       variant={first ? "challenge" : "surface"}
       className={cn(
-        "flex flex-col items-center px-2 text-center",
+        "relative flex flex-col items-center px-2 text-center",
+        interactive && "transition-transform has-[button:active]:scale-[0.98] has-[button:focus-visible]:ring-4 has-[button:focus-visible]:ring-[var(--focus-ring)]",
         first ? "pb-5 pt-5 sm:pb-8 sm:pt-7" : "pb-4 pt-4 sm:pb-6 sm:pt-6",
         you && "ring-2 ring-brand",
       )}
     >
       {children}
     </Card>
+  );
+}
+
+/** Streak and solve count, squeezed to icons on phones where the podium cards are only a third of the screen wide. */
+function PodiumStats({ streak, solved }: { streak: number; solved: number }) {
+  return (
+    <p className="mt-0.5 flex items-center justify-center gap-1.5 text-[13px] tabular-nums text-ink-muted sm:text-sm">
+      <span className="flex items-center gap-0.5">
+        <FlameIcon size={14} className="sm:size-4" />
+        {streak}
+        <span className="sr-only"> day streak</span>
+      </span>
+      <span aria-hidden="true">·</span>
+      <span className="flex items-center gap-0.5">
+        <CheckIcon size={13} className="sm:hidden" />
+        {solved.toLocaleString("en-US")}
+        <span className="max-sm:sr-only">&nbsp;solved</span>
+      </span>
+    </p>
   );
 }
 
@@ -246,7 +282,7 @@ function PodiumSkeleton({ first }: { first: boolean }) {
       <div className="w-full text-[13px] sm:text-base">
         <Skeleton tone={tone} className="inline-block h-[0.8em] w-3/4 max-w-28 align-middle" />
       </div>
-      <div className="hidden text-sm sm:block">
+      <div className="mt-0.5 text-[13px] sm:text-sm">
         <Skeleton tone={tone} className="inline-block h-[0.8em] w-2/3 max-w-32 align-middle" />
       </div>
       <div className="mt-1.5 text-sm sm:mt-2 sm:text-base">
@@ -293,12 +329,29 @@ function RowSkeletons({ count = TOP_ROWS - 3 }: { count?: number }) {
   ));
 }
 
-function Row({ entry, rank, period }: { entry: Entry; rank: number | null; period: Period }) {
+/**
+ * The player's name as a button whose hit area stretches over the nearest positioned ancestor, so the whole
+ * row or podium card opens their record while the markup stays a list.
+ */
+function PlayerButton({ name, onClick }: { name: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-haspopup="dialog"
+      className="max-w-full truncate outline-none after:absolute after:inset-0 after:content-['']"
+    >
+      {name}
+    </button>
+  );
+}
+
+function Row({ entry, rank, period, onOpen }: { entry: Entry; rank: number | null; period: Period; onOpen: () => void }) {
   const notPlayed = entry.you && rank === null;
   return (
     <li
       className={cn(
-        "grid grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5",
+        "relative grid transition-colors hover:bg-surface-muted has-[button:focus-visible]:bg-surface-muted grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5",
         entry.you && "bg-brand-subtle",
       )}
     >
@@ -306,9 +359,9 @@ function Row({ entry, rank, period }: { entry: Entry; rank: number | null; perio
       <span className="flex min-w-0 items-center gap-3">
         <Avatar name={entry.name} you={entry.you} tone={toneFor(entry.id)} size={36} />
         <span className="min-w-0">
-          <span className="block truncate font-semibold text-ink">
-            {entry.name}
-            {entry.you && <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">You</span>}
+          <span className="flex min-w-0 items-center font-semibold text-ink">
+            <PlayerButton name={entry.name} onClick={onOpen} />
+            {entry.you && <span className="ml-2 shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">You</span>}
           </span>
           <span className="flex items-center gap-1 text-[13px] text-ink-muted">
             <span className="sm:hidden">
@@ -324,7 +377,7 @@ function Row({ entry, rank, period }: { entry: Entry; rank: number | null; perio
       </span>
       <span className="text-right text-[15px] font-semibold tabular-nums text-ink">
         {notPlayed ? (
-          <Link href="/" className="text-brand-ink hover:underline">
+          <Link href="/" className="relative z-10 text-brand-ink hover:underline">
             Play now →
           </Link>
         ) : (
