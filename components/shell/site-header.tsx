@@ -14,8 +14,9 @@ import { NAV_ITEMS, navTransition } from "./nav";
 export function SiteHeader({ user }: { user: SessionUser | null | undefined }) {
   const pathname = usePathname();
   return (
-    // Named so it holds still above the page while a route transition slides the content.
-    <header className="border-b border-transparent sm:border-line" style={{ viewTransitionName: "site-header" }}>
+    // Named so it holds still above the page while a route transition slides the content. The name also makes the
+    // header a stacking context, so it needs its own z-index to keep the account menu above the page.
+    <header className="relative z-30 border-b border-transparent sm:border-line" style={{ viewTransitionName: "site-header" }}>
       <div className="relative mx-auto flex h-16 max-w-[1120px] items-center justify-between px-4 sm:h-[72px] sm:px-8">
         <Link href="/" className="flex items-center gap-2 sm:gap-2.5" aria-label="witto home">
           <WittoMark size={30} className="sm:size-9" />
