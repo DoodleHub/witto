@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Witto design system — tokens
+   witto design system — tokens
    Semantic tokens only; components never reference raw hex values.
    Theme resolution: [data-theme] on <html> wins, otherwise the OS preference.
    [data-theme] also works on any element to force a theme for a subtree.

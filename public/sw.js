@@ -1,13 +1,13 @@
-// Witto service worker: caches hashed static assets, shows an offline page when navigation fails and
+// witto service worker: caches hashed static assets, shows an offline page when navigation fails and
 // shows the daily challenge notification. Pages themselves are always fetched from the network because
 // they depend on the signed-in user, so a cold launch first gets an instant splash that then loads the real page.
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC_CACHE = `witto-static-${VERSION}`;
 const PRECACHE = ["/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Witto — Offline</title>
+<title>witto — Offline</title>
 <style>
   :root { color-scheme: light dark; --bg: #fbf9f6; --ink: #17142b; --muted: #75718a; --brand: #7a5ae6; }
   @media (prefers-color-scheme: dark) { :root { --bg: #0f0d16; --ink: #f3f1fa; --muted: #a5a1b4; } }
@@ -23,13 +23,13 @@ const OFFLINE_HTML = `<!doctype html>
   <button onclick="location.reload()">Try again</button>
 </main></body></html>`;
 
-// Shown instantly when the app opens with no other Witto window, instead of a blank screen while the server responds.
+// Shown instantly when the app opens with no other witto window, instead of a blank screen while the server responds.
 // The real page is fetched in the background meanwhile. After SPLASH_MIN_MS (so a fast load doesn't just flicker) the
 // splash re-requests the same URL, which gets that background response, and stays painted until the real page renders.
 const SPLASH_MIN_MS = 1000;
 const SPLASH_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Witto</title>
+<title>witto</title>
 <script>try{var t=localStorage.getItem("witto-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <style>
   :root { color-scheme: light; --bg: #fbf9f6; --track: #ebe4fd; --brand: #7a5ae6; }
@@ -44,14 +44,16 @@ const SPLASH_HTML = `<!doctype html>
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { main { animation-name: none; } .spinner { animation-duration: 2.4s; } }
 </style></head>
-<body><main aria-busy="true" aria-label="Loading Witto">
+<body><main aria-busy="true" aria-label="Loading witto">
   <!-- Mirrors app/icon.svg. -->
   <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true">
-    <defs><linearGradient id="g" x1="2" y1="0" x2="22" y2="24" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9b7ff7"/><stop offset="1" stop-color="#5c3cc6"/></linearGradient></defs>
-    <rect width="24" height="24" rx="5.5" fill="url(#g)"/>
-    <polyline points="4.44,7.68 8.22,16.32 12,9.84 15.78,16.32 19.56,7.68" fill="none" stroke="#fff" stroke-width="1.84" stroke-linecap="round" stroke-linejoin="round"/>
-    <g fill="#fff"><circle cx="4.44" cy="7.68" r="1.89"/><circle cx="8.22" cy="16.32" r="1.89"/><circle cx="12" cy="9.84" r="1.89"/><circle cx="15.78" cy="16.32" r="1.89"/></g>
+    <defs><linearGradient id="b" x1="2" y1="0" x2="22" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#241d40"/><stop offset="1" stop-color="#0f0d16"/></linearGradient>
+      <linearGradient id="g" x1="4" y1="7" x2="20" y2="17" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c9b9ff"/><stop offset="1" stop-color="#8466f0"/></linearGradient></defs>
+    <rect width="24" height="24" rx="5.5" fill="url(#b)"/>
+    <polyline points="4.44,7.68 8.22,16.32 12,9.84 15.78,16.32 19.56,7.68" fill="none" stroke="url(#g)" stroke-width="1.84" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="url(#g)"><circle cx="4.44" cy="7.68" r="1.89"/><circle cx="8.22" cy="16.32" r="1.89"/><circle cx="12" cy="9.84" r="1.89"/><circle cx="15.78" cy="16.32" r="1.89"/></g>
     <circle cx="19.56" cy="7.68" r="1.89" fill="#ffd27a"/>
   </svg>
   <div class="spinner"></div>
@@ -129,7 +131,7 @@ self.addEventListener("push", (event) => {
     data = event.data ? event.data.json() : {};
   } catch {}
   event.waitUntil(
-    self.registration.showNotification(data.title || "Witto", {
+    self.registration.showNotification(data.title || "witto", {
       body: data.body || "A fresh puzzle is waiting.",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
@@ -139,7 +141,7 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// Bring an open Witto window forward (it picks up the new day when it becomes visible), or open one.
+// Bring an open witto window forward (it picks up the new day when it becomes visible), or open one.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin);

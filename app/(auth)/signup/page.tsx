@@ -5,7 +5,7 @@ import { getSessionUser, safeNext } from "@/lib/auth";
 import { signUp } from "../actions";
 
 export const metadata: Metadata = {
-  title: "Create account — Witto",
+  title: "Create account — witto",
 };
 
 export default async function SignupPage({ searchParams }: PageProps<"/signup">) {

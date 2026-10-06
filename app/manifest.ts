@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Witto — One fresh puzzle, every day",
-    short_name: "Witto",
+    name: "witto — One fresh puzzle, every day",
+    short_name: "witto",
     description: "A little challenge. A sharper you. One daily puzzle: word, math, riddle, trivia, mini crossword, spelling bee or connections.",
     id: "/",
     start_url: "/",

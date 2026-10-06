@@ -16,9 +16,9 @@ export function SiteHeader({ user }: { user: SessionUser | null | undefined }) {
   return (
     <header className="border-b border-transparent sm:border-line">
       <div className="relative mx-auto flex h-16 max-w-[1120px] items-center justify-between px-4 sm:h-[72px] sm:px-8">
-        <Link href="/" className="flex items-center gap-2 sm:gap-2.5" aria-label="Witto home">
+        <Link href="/" className="flex items-center gap-2 sm:gap-2.5" aria-label="witto home">
           <WittoMark size={30} className="sm:size-9" />
-          <span className="text-2xl font-semibold tracking-[-0.01em] text-ink sm:text-[28px]">Witto</span>
+          <span className="text-2xl font-semibold tracking-[-0.01em] text-ink sm:text-[28px]">witto</span>
         </Link>
 
         <nav aria-label="Main" className="absolute left-1/2 hidden h-[72px] -translate-x-1/2 items-stretch gap-2 sm:flex">

@@ -121,7 +121,7 @@ export function AuthForm({
       </Card>
 
       <p className="mt-6 text-center text-sm text-ink-secondary">
-        {signUp ? "Already have an account? " : "New to Witto? "}
+        {signUp ? "Already have an account? " : "New to witto? "}
         <Link
           href={{ pathname: signUp ? "/login" : "/signup", query: next === "/" ? {} : { next } }}
           className="font-semibold text-brand-ink hover:underline"

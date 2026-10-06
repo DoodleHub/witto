@@ -3,7 +3,7 @@ import { LeaderboardView } from "@/components/leaderboard/leaderboard-view";
 import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Leaderboard — Witto",
+  title: "Leaderboard — witto",
 };
 
 export default async function LeaderboardPage() {

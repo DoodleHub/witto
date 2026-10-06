@@ -8,9 +8,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Witto
+# witto
 
-Witto is a daily puzzle app with one challenge per day, shared by every player. The challenge types are word, math, riddle, fact, mini crossword, spelling bee and connections. Players sign in, reveal the day's challenge (which starts their timer), play it, and climb a leaderboard ranked by solve time and points. It is installable as a PWA, with an optional push notification when the next challenge drops.
+witto is a daily puzzle app with one challenge per day, shared by every player. The challenge types are word, math, riddle, fact, mini crossword, spelling bee and connections. Players sign in, reveal the day's challenge (which starts their timer), play it, and climb a leaderboard ranked by solve time and points. It is installable as a PWA, with an optional push notification when the next challenge drops.
 
 Stack: Next.js 16 (App Router, `proxy.ts` rather than `middleware.ts`), React 19, Tailwind v4, Supabase (Auth, Postgres, Edge Functions, pg_cron). There is no test suite. Check your work with `npm run lint`, `npx tsc --noEmit` and the running app.
 

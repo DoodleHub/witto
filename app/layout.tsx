@@ -23,12 +23,12 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Witto — One fresh puzzle, every day",
+  title: "witto — One fresh puzzle, every day",
   description: "A little challenge. A sharper you. One daily puzzle: word, math, riddle, trivia, mini crossword, spelling bee or connections.",
-  applicationName: "Witto",
+  applicationName: "witto",
   appleWebApp: {
     capable: true,
-    title: "Witto",
+    title: "witto",
     statusBarStyle: "default",
   },
 };

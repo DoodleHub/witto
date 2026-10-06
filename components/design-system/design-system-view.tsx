@@ -171,13 +171,13 @@ export function DesignSystemView() {
       <header>
         <div className="flex items-center gap-3">
           <WittoMark size={40} />
-          <Overline>Witto · Design system v1</Overline>
+          <Overline>witto · Design system v1</Overline>
         </div>
         <h1 className="mt-5 font-serif text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] sm:text-display">
           Calm, clever, a little bit delightful.
         </h1>
         <p className="mt-4 max-w-[640px] text-lg text-ink-secondary">
-          The building blocks behind Witto&apos;s daily challenge. Warm paper neutrals, one confident violet, an
+          The building blocks behind witto&apos;s daily challenge. Warm paper neutrals, one confident violet, an
           editorial serif for moments that matter and a friendly sans for everything else. Every color is a semantic
           token with a light and a dark value.
         </p>

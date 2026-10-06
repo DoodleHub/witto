@@ -13,7 +13,7 @@ async function initialInstall(): Promise<Install | null> {
 }
 
 /**
- * Mobile-only alerts under the header: one to add Witto to the home screen until it's installed, and, for signed-in
+ * Mobile-only alerts under the header: one to add witto to the home screen until it's installed, and, for signed-in
  * players (the subscription is saved to their account), one for new puzzle alerts until they're on. Neither can be
  * dismissed. The permission request has to come from a tap (iOS ignores it otherwise, and Chrome downgrades sites that
  * prompt on load), so this asks first and the button triggers the prompt.
@@ -81,7 +81,7 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
     <div className="mx-4 mt-1 mb-2 flex flex-col gap-2 sm:hidden">
       {install?.kind === "ios" && (
         <Alert
-          title="Add Witto to your home screen"
+          title="Add witto to your home screen"
           body={
             <>
               Tap <ShareGlyph /> Share, then <span className="font-semibold text-ink">Add to Home Screen</span>.
@@ -92,7 +92,7 @@ export function AppPrompts({ signedIn }: { signedIn: boolean }) {
       )}
       {install?.kind === "android" && (
         <Alert
-          title="Install Witto"
+          title="Install witto"
           body="One tap to open today’s puzzle, right from your home screen."
           action="Install"
           onAction={() => installAndroid(install.event)}

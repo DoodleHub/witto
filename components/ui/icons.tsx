@@ -22,7 +22,7 @@ function Base({ size = 24, children, ...props }: IconProps) {
   );
 }
 
-/** A W traced through five dots, like a connect-the-dots puzzle; the gold dot is today's. Mirrors `app/icon.svg`. */
+/** A W traced through five dots, like a connect-the-dots puzzle; the gold dot is today's. The app icon (`app/icon.svg`) draws the same mark on a dark tile. */
 export function WittoMark({ size = 32, ...props }: IconProps) {
   const id = useId();
   return (

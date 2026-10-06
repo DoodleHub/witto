@@ -11,7 +11,7 @@ const getSnapshot = () => (detected === undefined ? (detected = detectInAppBrows
 const getServerSnapshot = () => null;
 
 /**
- * Shown when Witto is opened from a link inside a social app's WebView (WeChat, Instagram, X…). Those can't add Witto to
+ * Shown when witto is opened from a link inside a social app's WebView (WeChat, Instagram, X…). Those can't add witto to
  * the home screen, and a sign-in there doesn't carry over to the real browser, so this asks to switch first. It tries a
  * one-tap hand-off where the host app allows one and falls back to the app's own "Open in browser" menu plus copy link.
  * Rendered for signed-out visitors too, since the switch should happen before they sign in.
@@ -48,9 +48,9 @@ export function InAppBrowserNotice() {
   return (
     <div className="mx-4 mt-1 mb-2">
       <div role="status" className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
-        <p className="text-sm font-semibold text-ink">Open Witto in your browser</p>
+        <p className="text-sm font-semibold text-ink">Open witto in your browser</p>
         <p className="mt-0.5 text-sm text-ink-secondary">
-          You’re viewing Witto {from}, so it can’t be added to your home screen and your sign-in won’t stick.
+          You’re viewing witto {from}, so it can’t be added to your home screen and your sign-in won’t stick.
         </p>
         {showManual && (
           <p className="mt-1.5 text-sm text-ink-secondary">

@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
   const meta = TYPE_META[challenge.type];
   const payload = JSON.stringify({
-    title: `Witto #${challenge.number} is ready`,
+    title: `witto #${challenge.number} is ready`,
     body: meta ? `Today's challenge: ${meta.label}.` : "A fresh puzzle is waiting.",
     url: "/",
     tag: "daily-challenge",
