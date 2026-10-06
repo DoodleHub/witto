@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
-import { CloseIcon, FlameIcon, LightbulbIcon, TYPE_ICONS } from "@/components/ui/icons";
+import { FlameIcon, LightbulbIcon, TYPE_ICONS } from "@/components/ui/icons";
 import { Overline } from "@/components/ui/overline";
+import { Sheet, SheetClose } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHALLENGE_TYPES, TYPE_META } from "@/lib/challenges";
 import { formatDuration, fromDateKey } from "@/lib/date";
@@ -31,25 +32,8 @@ function plural(n: number, word: string) {
  * The leaderboard row supplies the name straight away, and the rest loads behind it.
  */
 export function PlayerSheet({ player, today, onClose }: { player: Entry | null; today: string | null; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [profiles, setProfiles] = useState<Profiles>({});
   const key = player && today ? `${player.id}:${today}` : null;
-
-  // Keyed on open rather than on `player`, so a leaderboard refresh behind the sheet doesn't reopen it.
-  const open = player !== null;
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || !open) return;
-    dialog.showModal();
-    // A modal dialog doesn't stop the page behind it from scrolling.
-    const root = document.documentElement;
-    const overflow = root.style.overflow;
-    root.style.overflow = "hidden";
-    return () => {
-      root.style.overflow = overflow;
-      dialog.close();
-    };
-  }, [open]);
 
   useEffect(() => {
     if (!player || !today || !key || key in profiles) return;
@@ -69,18 +53,8 @@ export function PlayerSheet({ player, today, onClose }: { player: Entry | null; 
   const profile = key ? profiles[key] : undefined;
 
   return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby="player-sheet-name"
-      // Escape fires `close` on the dialog itself, so route it through the parent's state.
-      onClose={onClose}
-      // The inner panel fills the dialog, so a click that lands on the dialog itself is on the backdrop.
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      className={cn(
-        "m-0 mt-auto max-h-[88dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-[22px] border border-line bg-surface text-ink shadow-card backdrop:bg-scrim open:animate-rise",
-        "sm:m-auto sm:max-w-[440px] sm:rounded-[22px]",
-      )}
-    >
+    // Keyed on `player !== null` rather than on `player`, so a leaderboard refresh behind the sheet doesn't reopen it.
+    <Sheet open={player !== null} onClose={onClose} labelledBy="player-sheet-name">
       {player && (
         <div className="px-5 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-7 sm:pt-7 sm:pb-7">
           <div className="flex items-start gap-4">
@@ -98,14 +72,7 @@ export function PlayerSheet({ player, today, onClose }: { player: Entry | null; 
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="-mr-2 -mt-1 flex size-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-            >
-              <CloseIcon size={20} />
-            </button>
+            <SheetClose onClick={onClose} className="-mr-2 -mt-1" />
           </div>
 
           {profile === "error" || profile === null ? (
@@ -117,7 +84,7 @@ export function PlayerSheet({ player, today, onClose }: { player: Entry | null; 
           )}
         </div>
       )}
-    </dialog>
+    </Sheet>
   );
 }
 
