@@ -177,7 +177,7 @@ function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
                 <Icon size={20} className="shrink-0 text-ink-muted" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-medium text-ink">
-                    #{play.number} · {TYPE_META[play.type].label}
+                    {TYPE_META[play.type].label}
                   </span>
                   <span className="block text-[13px] text-ink-muted">{formatDay(play.day)}</span>
                 </span>
