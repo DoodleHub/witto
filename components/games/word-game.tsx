@@ -21,7 +21,7 @@ const tileTone: Record<Mark, string> = {
 };
 
 /** Guesses are scored on the server, which holds the answer and returns each guess's tile colors. */
-export function WordGame({ dateKey, play, result, hintUsed }: GameProps<WordContent, WordPlay>) {
+export function WordGame({ dateKey, play, result, hintUsed, share }: GameProps<WordContent, WordPlay>) {
   const guesses = play.guesses ?? [];
   const marks = play.marks ?? [];
   const [current, setCurrent] = useState("");
@@ -136,6 +136,7 @@ export function WordGame({ dateKey, play, result, hintUsed }: GameProps<WordCont
         <div className="mt-3">
           <ResultBanner
             result={result}
+            share={share}
             detail={
               play.solution && (
                 <>

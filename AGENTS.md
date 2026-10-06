@@ -24,6 +24,7 @@ Stack: Next.js 16 (App Router, `proxy.ts` rather than `middleware.ts`), React 19
   - `shell/`: the header, mobile tab bar, account menu, install/notification prompts, the in-app-browser notice and service worker registration.
   - `ui/`: shared primitives (Button, Card, Chip, TextInput, icons…) plus `cn()`. Reuse these before writing new ones.
 - `lib/`
+  - `share.ts`: the spoiler-free emoji summary of a finished play behind the result banner's Share button.
   - `challenges.ts`: challenge types, `TYPE_META`/`TYPE_GUIDE` copy, and the public `*Content` and verified `*Play` types for each game.
   - `progress.ts`: the client-side store of the player's plays (see below).
   - `today.ts`: the current challenge day and countdown, synced to the server clock.
@@ -49,7 +50,7 @@ Players can only write `plays.game_state`, which holds UI-only state such as typ
 
 **Client progress store** (`lib/progress.ts`): a module-level `useSyncExternalStore` cache that mirrors the player's `plays` rows. Writes go through a per-day promise queue, so a play is always created before it is updated. Use `playMove`, `takeHint` and `useGameState` from game components. Never update `plays` directly. `refreshPlay` re-reads a day when the tab becomes visible, because the play may have moved on in another tab or on another device.
 
-**Scoring** (`leaderboard()` SQL function): "today" ranks by fastest solve time. "week" (weeks start on Monday) and "all" rank by points: 100 minus 1 per 6 seconds, minus 20 for a hint, with a floor of 20 for any solve. Streaks count consecutive finished days ending today or yesterday.
+**Scoring** (`leaderboard()` SQL function): "today" ranks by fastest solve time. "week" (weeks start on Monday) and "all" rank by points: 100 minus 1 per 6 seconds, minus 20 for a hint, with a floor of 20 for any solve. Streaks count consecutive finished days ending today or yesterday. Every 7th day played earns a streak freeze (up to 2 banked), which covers a missed day without adding to the streak. Freezes are never stored: `streak_walk()` replays them from the player's finished plays, and `streakFor` in `lib/progress.ts` mirrors it for the Today page, so keep the two in sync.
 
 **Auth**: email and password with a unique display name (3–24 characters, unique regardless of case). A trigger on `auth.users` creates the `profiles` row in the same transaction, so a duplicate name aborts the signup. The proxy redirects signed-out visitors to `/login?next=…`, except on `/login`, `/signup` and `/leaderboard`. Use `getSessionUser()` (based on `getClaims()`) to read the user on the server. Use `safeNext()` for redirects.
 
@@ -67,7 +68,7 @@ Players can only write `plays.game_state`, which holds UI-only state such as typ
   - Wrap `auth.uid()` as `(select auth.uid())` in policies.
   - Comment the *why* above each object.
 - Challenges are seeded a year ahead (`seed_challenges.sql`): types rotate daily, and each type steps through its own pool. Secret fields such as `answer`, `answers`, `words` and `groups` live in `challenges.content` and must stay out of `challenge_public_content`.
-- `daily-challenge-push` runs at 00:00 UTC through pg_cron. It authenticates with `DAILY_PUSH_SECRET`, which is stored in Vault as `daily_push_secret`, and uses the service role key to send Web Push (VAPID). It also prunes subscriptions that come back 410. Its `TYPE_META` duplicates the one in `lib/challenges.ts`, so keep the two in sync.
+- `daily-challenge-push` runs at 00:00 UTC through pg_cron. A second job at 20:00 UTC calls it with `{"kind": "streak"}` to remind players whose streak of 3 or more would end tonight (`streak_reminders()`). It authenticates with `DAILY_PUSH_SECRET`, which is stored in Vault as `daily_push_secret`, and uses the service role key to send Web Push (VAPID). It also prunes subscriptions that come back 410. Its `TYPE_META` duplicates the one in `lib/challenges.ts`, so keep the two in sync.
 
 ## Constraints and conventions
 

@@ -52,7 +52,7 @@ function buildLayout(grid: string[]) {
 }
 
 /** The grid's letters stay on the server, which checks the entries and supplies revealed squares. */
-export function CrosswordGame({ dateKey, content, play, result, hintUsed }: GameProps<CrosswordContent, CrosswordPlay>) {
+export function CrosswordGame({ dateKey, content, play, result, hintUsed, share }: GameProps<CrosswordContent, CrosswordPlay>) {
   const { cells, numbers, words } = useMemo(() => buildLayout(content.grid), [content.grid]);
   const [state, setState] = useGameState<State>(dateKey, {
     entries: Array(N * N).fill(""),
@@ -336,6 +336,7 @@ export function CrosswordGame({ dateKey, content, play, result, hintUsed }: Game
         {result ? (
           <ResultBanner
             result={result}
+            share={share}
             detail={result.status === "solved" ? "Every square, every clue." : "Here's the finished grid."}
           />
         ) : (

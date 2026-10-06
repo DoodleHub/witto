@@ -11,7 +11,7 @@ import type { GameProps } from "./types";
 
 const LETTERS = ["A", "B", "C", "D"];
 
-export function FactGame({ dateKey, content, play, result, hintUsed }: GameProps<FactContent, FactPlay>) {
+export function FactGame({ dateKey, content, play, result, hintUsed, share }: GameProps<FactContent, FactPlay>) {
   const [pending, setPending] = useState<number | null>(null);
   const picked = play.picked ?? pending;
   // The hint rules out a wrong option.
@@ -73,7 +73,7 @@ export function FactGame({ dateKey, content, play, result, hintUsed }: GameProps
 
       <div className="mt-5 sm:mt-7">
         {result ? (
-          <ResultBanner result={result} detail={play.solution?.explanation} />
+          <ResultBanner result={result} share={share} detail={play.solution?.explanation} />
         ) : (
           <HintRow
             used={hintUsed}

@@ -221,6 +221,20 @@ export const EyeOffIcon = (p: IconProps) => (
   </Base>
 );
 
+export const SnowflakeIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5" />
+    <path d="M9.5 4l2.5 2 2.5-2M9.5 20l2.5-2 2.5 2" />
+  </Base>
+);
+
+export const ShareIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 15V3.5M7.5 8 12 3.5 16.5 8" />
+    <path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16" />
+  </Base>
+);
+
 export const TYPE_ICONS: Record<ChallengeType, (p: IconProps) => React.ReactElement> = {
   word: WordIcon,
   math: CalculatorIcon,

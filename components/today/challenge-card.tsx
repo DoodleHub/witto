@@ -23,6 +23,7 @@ import {
   type WordPlay,
 } from "@/lib/challenges";
 import type { DayResult } from "@/lib/progress";
+import { shareText } from "@/lib/share";
 
 type Props = {
   challenge: DailyChallenge | SealedChallenge;
@@ -30,11 +31,13 @@ type Props = {
   play: unknown;
   result: DayResult | undefined;
   hintUsed: boolean;
+  /** The player's current streak, for the shared result. */
+  streak: number;
   /** Starts the play and loads the sealed challenge's content. */
   onReveal: (dateKey: string) => Promise<void>;
 };
 
-export function ChallengeCard({ challenge, play, result, hintUsed, onReveal }: Props) {
+export function ChallengeCard({ challenge, play, result, hintUsed, streak, onReveal }: Props) {
   const { dateKey } = challenge;
 
   return (
@@ -45,14 +48,15 @@ export function ChallengeCard({ challenge, play, result, hintUsed, onReveal }: P
       {challenge.content === null ? (
         <RevealPrompt onReveal={() => onReveal(dateKey)} />
       ) : (
-        <Game challenge={challenge} play={play} result={result} hintUsed={hintUsed} />
+        <Game challenge={challenge} play={play} result={result} hintUsed={hintUsed} streak={streak} />
       )}
     </Card>
   );
 }
 
-function Game({ challenge, play, result, hintUsed }: Omit<Props, "challenge" | "onReveal"> & { challenge: DailyChallenge }) {
-  const shared = { dateKey: challenge.dateKey, result, hintUsed };
+function Game({ challenge, play, result, hintUsed, streak }: Omit<Props, "challenge" | "onReveal"> & { challenge: DailyChallenge }) {
+  const share = result && shareText({ challenge, play, result, streak });
+  const shared = { dateKey: challenge.dateKey, result, hintUsed, share };
   // The server shapes the play's state to match the challenge type.
   const state = play ?? {};
 

@@ -10,4 +10,6 @@ export type GameProps<C, P> = {
   play: P;
   result: DayResult | undefined;
   hintUsed: boolean;
+  /** The finished play's spoiler-free summary, for the result banner's share button. */
+  share?: string;
 };

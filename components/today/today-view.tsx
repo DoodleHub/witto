@@ -63,6 +63,7 @@ export function TodayView({ userId }: { userId: string }) {
   const current = loaded?.dateKey === today ? loaded : null;
   const ready = today && store && current;
   const failed = progressError || current?.error;
+  const streak = store && today ? streakFor(store, today) : null;
 
   return (
     <TodayShell
@@ -78,6 +79,7 @@ export function TodayView({ userId }: { userId: string }) {
             play={store.states[today]}
             result={store.results[today]}
             hintUsed={!!store.hints[today]}
+            streak={streak?.streak ?? 0}
             onReveal={reveal}
           />
         ) : (
@@ -87,7 +89,7 @@ export function TodayView({ userId }: { userId: string }) {
       streak={
         <StreakCard
           today={store && today ? today : null}
-          streak={store && today ? streakFor(store, today) : 0}
+          streak={streak}
           playedDays={new Set(store ? Object.keys(store.results) : [])}
         />
       }
@@ -100,7 +102,7 @@ export function TodaySkeleton() {
   return (
     <TodayShell
       challenge={<ChallengeCardSkeleton />}
-      streak={<StreakCard today={null} streak={0} playedDays={new Set()} />}
+      streak={<StreakCard today={null} streak={null} playedDays={new Set()} />}
     />
   );
 }

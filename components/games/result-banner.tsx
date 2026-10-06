@@ -3,8 +3,18 @@ import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/components/ui/cn";
 import type { DayResult } from "@/lib/progress";
 import { formatDuration } from "@/lib/date";
+import { ShareButton } from "./share-button";
 
-export function ResultBanner({ result, detail }: { result: DayResult; detail?: React.ReactNode }) {
+export function ResultBanner({
+  result,
+  detail,
+  share,
+}: {
+  result: DayResult;
+  detail?: React.ReactNode;
+  /** The spoiler-free summary to share, when there is one. */
+  share?: string;
+}) {
   const solved = result.status === "solved";
   return (
     <div
@@ -31,12 +41,12 @@ export function ResultBanner({ result, detail }: { result: DayResult; detail?: R
           {detail && <p className="mt-0.5 text-ink-secondary">{detail}</p>}
         </div>
       </div>
-      <Link
-        href="/leaderboard"
-        className="shrink-0 self-start rounded-lg px-1 text-sm font-semibold text-brand-ink hover:underline sm:self-center"
-      >
-        See leaderboard →
-      </Link>
+      <div className="flex shrink-0 items-center gap-4 self-start sm:self-center">
+        {share && <ShareButton text={share} />}
+        <Link href="/leaderboard" className="rounded-lg px-1 text-sm font-semibold text-brand-ink hover:underline">
+          See leaderboard →
+        </Link>
+      </div>
     </div>
   );
 }

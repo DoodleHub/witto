@@ -210,13 +210,55 @@ export function useGameState<T>(dateKey: string, initial: T): [T, (next: T) => v
   return [value, set];
 }
 
-/** Consecutive played days ending today (or yesterday, if today isn't done yet). */
-export function streakFor(store: Store, today: string): number {
-  let day = store.results[today] ? today : addDays(today, -1);
-  let count = 0;
-  while (store.results[day]) {
-    count++;
-    day = addDays(day, -1);
+/** Every 7th day played earns a streak freeze, and a player can bank at most 2. */
+export const FREEZE_EVERY = 7;
+export const FREEZE_CAP = 2;
+
+export type Streak = {
+  streak: number;
+  /** Freezes still banked. */
+  freezes: number;
+  /** Days played until the next freeze, or null while the bank is full. */
+  toNextFreeze: number | null;
+  /** Missed days a freeze covered in the current streak. */
+  frozen: Set<string>;
+};
+
+/**
+ * The player's streak as of `today`, which is still open: missed days before it spend banked freezes,
+ * but only when the freezes cover the whole gap. Mirrors public.streak_walk (the streak_freezes
+ * migration), which the leaderboard and reminders use; keep the two in sync.
+ */
+export function streakFor(store: Store, today: string): Streak {
+  const played = Object.keys(store.results)
+    .filter((day) => day <= today)
+    .sort();
+  let streak = 0;
+  let freezes = 0;
+  let frozen = new Set<string>();
+
+  /** Covers the missed days after `prev` and before `day`, or ends the streak. */
+  function bridge(prev: string | undefined, day: string) {
+    if (!prev) return;
+    const missed: string[] = [];
+    for (let d = addDays(prev, 1); d < day; d = addDays(d, 1)) missed.push(d);
+    if (!missed.length) return;
+    if (streak > 0 && missed.length <= freezes) {
+      freezes -= missed.length;
+      missed.forEach((d) => frozen.add(d));
+    } else {
+      streak = 0;
+      frozen = new Set();
+    }
   }
-  return count;
+
+  played.forEach((day, i) => {
+    bridge(played[i - 1], day);
+    streak++;
+    if ((i + 1) % FREEZE_EVERY === 0) freezes = Math.min(freezes + 1, FREEZE_CAP);
+  });
+  bridge(played.at(-1), today);
+
+  const toNextFreeze = freezes < FREEZE_CAP ? FREEZE_EVERY - (played.length % FREEZE_EVERY) : null;
+  return { streak, freezes, toNextFreeze, frozen };
 }

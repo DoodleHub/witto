@@ -16,7 +16,9 @@ import {
   HomeIcon,
   MoonIcon,
   PodiumIcon,
+  ShareIcon,
   ShuffleIcon,
+  SnowflakeIcon,
   WittoMark,
   SunIcon,
   TYPE_ICONS,
@@ -390,6 +392,8 @@ export function DesignSystemView() {
               <ShuffleIcon size={26} />
               <BackspaceIcon size={26} />
               <ClockIcon size={26} />
+              <SnowflakeIcon size={26} />
+              <ShareIcon size={26} />
               <CrownIcon size={26} />
               <SunIcon size={26} />
               <MoonIcon size={26} />

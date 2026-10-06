@@ -1,5 +1,5 @@
 // witto service worker: caches hashed static assets, shows an offline page when navigation fails and
-// shows the daily challenge notification. Pages themselves are always fetched from the network because
+// shows push notifications. Pages themselves are always fetched from the network because
 // they depend on the signed-in user, so a cold launch first gets an instant splash that then loads the real page.
 const VERSION = "v4";
 const STATIC_CACHE = `witto-static-${VERSION}`;
@@ -124,7 +124,7 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-// Daily rollover notification from the daily-challenge-push Edge Function.
+// The daily rollover and streak reminder notifications from the daily-challenge-push Edge Function.
 self.addEventListener("push", (event) => {
   let data = {};
   try {

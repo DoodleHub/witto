@@ -28,7 +28,7 @@ function seededShuffle<T>(items: T[], seed: string): T[] {
 }
 
 /** Groups are checked on the server, which holds them; the board only knows the sixteen words. */
-export function ConnectionsGame({ dateKey, content, play, result, hintUsed }: GameProps<ConnectionsContent, ConnectionsPlay>) {
+export function ConnectionsGame({ dateKey, content, play, result, hintUsed, share }: GameProps<ConnectionsContent, ConnectionsPlay>) {
   const [state, setState] = useGameState<State>(dateKey, { order: content.words });
   const [selected, setSelected] = useState<string[]>([]);
   const [checking, setChecking] = useState(false);
@@ -149,6 +149,7 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed }: Ga
         {result ? (
           <ResultBanner
             result={result}
+            share={share}
             detail={
               result.status === "solved"
                 ? `All four groups with ${mistakes} ${mistakes === 1 ? "mistake" : "mistakes"}.`

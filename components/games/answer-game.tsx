@@ -12,7 +12,7 @@ import type { GameProps } from "./types";
 const REVEAL_AFTER = 3;
 
 /** Free-text answer: riddles and math puzzles. Guesses are checked on the server, which holds the answers. */
-export function AnswerGame({ dateKey, content, play, result, hintUsed }: GameProps<AnswerContent, AnswerPlay>) {
+export function AnswerGame({ dateKey, content, play, result, hintUsed, share }: GameProps<AnswerContent, AnswerPlay>) {
   const [wrong, setWrong] = useGameState<number>(dateKey, 0);
   const [value, setValue] = useState("");
   const [shakeKey, setShakeKey] = useState(0);
@@ -53,6 +53,7 @@ export function AnswerGame({ dateKey, content, play, result, hintUsed }: GamePro
         <div className="mt-6 sm:mt-8">
           <ResultBanner
             result={result}
+            share={share}
             detail={reveal && <>The answer: <strong className="font-semibold text-ink">{reveal}</strong></>}
           />
         </div>

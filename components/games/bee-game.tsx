@@ -23,7 +23,7 @@ const SLOTS = [
 ];
 
 /** Words are checked on the server, which holds the word list. The game ends once the goal is reached. */
-export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<BeeContent, BeePlay>) {
+export function BeeGame({ dateKey, content, play, result, hintUsed, share }: GameProps<BeeContent, BeePlay>) {
   const found = play.found ?? [];
   const [outer, setOuter] = useState(content.outer);
   const [current, setCurrent] = useState("");
@@ -179,6 +179,7 @@ export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<
         {result ? (
           <ResultBanner
             result={result}
+            share={share}
             detail={`${found.length} of ${content.total} words found.`}
           />
         ) : (
