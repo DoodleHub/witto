@@ -1,7 +1,7 @@
 // Witto service worker: caches hashed static assets, shows an offline page when navigation fails and
 // shows the daily challenge notification. Pages themselves are always fetched from the network because
 // they depend on the signed-in user, so a cold launch first gets an instant splash that then loads the real page.
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `witto-static-${VERSION}`;
 const PRECACHE = ["/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
@@ -45,10 +45,14 @@ const SPLASH_HTML = `<!doctype html>
   @media (prefers-reduced-motion: reduce) { main { animation-name: none; } .spinner { animation-duration: 2.4s; } }
 </style></head>
 <body><main aria-busy="true" aria-label="Loading Witto">
+  <!-- Mirrors app/icon.svg. -->
   <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true">
-    <defs><linearGradient id="g" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9b7ff7"/><stop offset="1" stop-color="#6a45dc"/></linearGradient></defs>
-    <path d="M12 1.5c.7 5.2 3.2 8.1 10.5 10.5-7.3 2.4-9.8 5.3-10.5 10.5C11.3 17.3 8.8 14.4 1.5 12 8.8 9.6 11.3 6.7 12 1.5z" fill="url(#g)"/>
+    <defs><linearGradient id="g" x1="2" y1="0" x2="22" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9b7ff7"/><stop offset="1" stop-color="#5c3cc6"/></linearGradient></defs>
+    <rect width="24" height="24" rx="5.5" fill="url(#g)"/>
+    <polyline points="4.44,7.68 8.22,16.32 12,9.84 15.78,16.32 19.56,7.68" fill="none" stroke="#fff" stroke-width="1.84" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#fff"><circle cx="4.44" cy="7.68" r="1.89"/><circle cx="8.22" cy="16.32" r="1.89"/><circle cx="12" cy="9.84" r="1.89"/><circle cx="15.78" cy="16.32" r="1.89"/></g>
+    <circle cx="19.56" cy="7.68" r="1.89" fill="#ffd27a"/>
   </svg>
   <div class="spinner"></div>
 </main>
