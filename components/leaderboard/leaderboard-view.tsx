@@ -16,7 +16,7 @@ import { PlayerSheet } from "./player-sheet";
 const PERIODS: { id: Period; label: string }[] = [
   { id: "today", label: "Today" },
   { id: "week", label: "This week" },
-  { id: "all", label: "All time" },
+  { id: "month", label: "This month" },
 ];
 
 const TOP_ROWS = 10;
@@ -152,7 +152,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
       </div>
 
       <p className="mt-5 text-center text-sm text-ink-muted">
-        Today ranks the fastest solves. Weekly and all-time rank points: up to 100 per puzzle, less for slower
+        Today ranks the fastest solves. Weekly and monthly rank points: up to 100 per puzzle, less for slower
         solves or a hint. Tap a player to see their record.
       </p>
 

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChallengeType } from "./challenges";
 import type { Database } from "./supabase/database.types";
 
-export type Period = "today" | "week" | "all";
+export type Period = "today" | "week" | "month";
 
 export type Entry = {
   id: string;
