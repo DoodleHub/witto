@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
   const today = now.toISOString().slice(0, 10);
   const { data: challenge, error } = await supabase
     .from("challenges")
-    .select("number, type")
+    .select("type")
     .eq("day", today)
     .maybeSingle();
   if (error) return Response.json({ error: error.message }, { status: 500 });
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     );
   } else {
     const payload = JSON.stringify({
-      title: `witto #${challenge.number} is ready`,
+      title: "Your daily witto is ready",
       body: label ? `Today's challenge: ${label}.` : "A fresh puzzle is waiting.",
       url: "/",
       tag: "daily-challenge",

@@ -42,7 +42,7 @@ export function shareText({
     streak > 1 && `🔥 ${streak}`,
   ].filter(Boolean);
 
-  return [`witto #${challenge.number} · ${TYPE_META[challenge.type].label}`, stats.join(" · "), ...grid]
+  return [`witto · ${TYPE_META[challenge.type].label}`, stats.join(" · "), ...grid]
     .filter(Boolean)
     .join("\n");
 }

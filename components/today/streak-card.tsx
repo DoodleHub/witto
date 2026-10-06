@@ -1,9 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { CheckIcon, FlameIcon, SnowflakeIcon } from "@/components/ui/icons";
+import { Overline } from "@/components/ui/overline";
+import { Sheet, SheetClose } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fromDateKey, weekOf } from "@/lib/date";
-import { FREEZE_EVERY, type Streak } from "@/lib/progress";
+import { FREEZE_CAP, FREEZE_EVERY, type Streak } from "@/lib/progress";
 
 type Props = {
   today: string | null;
@@ -16,6 +21,7 @@ function plural(n: number, word: string) {
 }
 
 export function StreakCard({ today, streak, playedDays }: Props) {
+  const [explaining, setExplaining] = useState(false);
   const week = today ? weekOf(today) : [];
   const doneToday = today ? playedDays.has(today) : false;
   const count = streak?.streak ?? 0;
@@ -39,13 +45,15 @@ export function StreakCard({ today, streak, playedDays }: Props) {
             </p>
             <p className="text-xs text-ink-secondary sm:text-[15px]">{sub}</p>
             {freezeNote && (
-              <p
-                className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted sm:text-sm"
-                title={`Every ${FREEZE_EVERY}th day you play earns a freeze, which covers a missed day so your streak lives on.`}
+              // A tap rather than a tooltip, since phones never show tooltips.
+              <button
+                type="button"
+                onClick={() => setExplaining(true)}
+                className="-mx-1 mt-0.5 flex items-center gap-1 rounded px-1 text-left text-xs text-ink-muted underline decoration-dotted underline-offset-2 hover:text-ink sm:text-sm"
               >
                 <SnowflakeIcon size={13} className="shrink-0" />
                 {freezeNote}
-              </p>
+              </button>
             )}
           </div>
         ) : (
@@ -101,6 +109,52 @@ export function StreakCard({ today, streak, playedDays }: Props) {
           );
         })}
       </ol>
+
+      <Sheet open={explaining} onClose={() => setExplaining(false)} labelledBy="freeze-sheet-title">
+        {streak && <FreezeGuide streak={streak} onClose={() => setExplaining(false)} />}
+      </Sheet>
     </Card>
+  );
+}
+
+/** How freezes are earned and spent, and where the player stands. Mirrors the rules in streakFor. */
+function FreezeGuide({ streak, onClose }: { streak: Streak; onClose: () => void }) {
+  const status =
+    streak.toNextFreeze === null
+      ? `You have ${plural(streak.freezes, "freeze")}, the most you can hold. Days you play won't earn more until you use one.`
+      : `You have ${plural(streak.freezes, "freeze")}. Play ${plural(streak.toNextFreeze, "more day")} to earn the next one.`;
+
+  return (
+    <div className="px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-7 sm:pt-6 sm:pb-7">
+      <div className="flex items-start justify-between gap-2">
+        <span className="mt-1 flex size-11 items-center justify-center rounded-full bg-cat-3 text-ink">
+          <SnowflakeIcon size={24} />
+        </span>
+        <SheetClose onClick={onClose} className="-mr-2" />
+      </div>
+      <Overline className="mt-4 font-semibold text-brand-ink sm:text-xs">Streak freezes</Overline>
+      <h2
+        id="freeze-sheet-title"
+        className="mt-1.5 font-serif text-2xl font-semibold tracking-[-0.015em] text-ink sm:text-[28px]"
+      >
+        A missed day doesn&apos;t have to end your streak.
+      </h2>
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[15px] text-ink-secondary marker:text-ink-faint sm:text-base">
+        <li>
+          Every {FREEZE_EVERY}th day you play earns a freeze. You can hold up to {FREEZE_CAP}.
+        </li>
+        <li>
+          Miss a day and a freeze covers it automatically, so your streak carries on. A frozen day keeps the streak
+          alive but doesn&apos;t add to it.
+        </li>
+        <li>
+          Miss more days in a row than you have freezes and your streak starts over, but you keep your freezes.
+        </li>
+      </ul>
+      <p className="mt-5 flex items-start gap-2 border-t border-line pt-4 text-sm text-ink-muted">
+        <SnowflakeIcon size={16} className="mt-0.5 shrink-0" />
+        {status}
+      </p>
+    </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
-import { FlameIcon, LightbulbIcon, TYPE_ICONS } from "@/components/ui/icons";
+import { FlameIcon, LightbulbIcon, SnowflakeIcon, TYPE_ICONS } from "@/components/ui/icons";
 import { Overline } from "@/components/ui/overline";
 import { Sheet, SheetClose } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,6 +111,17 @@ function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
               <span className="flex items-center gap-1">
                 <FlameIcon size={20} />
                 {profile.streak}
+                {/* Freezes come back only on your own profile (and not at all before the profile_freezes migration). */}
+                {typeof profile.freezes === "number" && (
+                  <span
+                    className="ml-1.5 flex items-center gap-0.5 font-sans text-sm font-medium text-ink-muted"
+                    title="Streak freezes saved"
+                  >
+                    <SnowflakeIcon size={14} />
+                    {profile.freezes}
+                    <span className="sr-only"> {profile.freezes === 1 ? "streak freeze" : "streak freezes"} saved</span>
+                  </span>
+                )}
               </span>
             )
           }

@@ -50,6 +50,8 @@ export type PlayerProfile = {
   fastest_ms: number | null;
   streak: number;
   best_streak: number;
+  /** Streak freezes held; only on the caller's own profile, null on anyone else's. */
+  freezes: number | null;
   /** Only the types they've finished at least once. */
   types: { type: ChallengeType; played: number; solved: number; best_ms: number | null }[];
   /** Their latest finished plays, newest first. */
