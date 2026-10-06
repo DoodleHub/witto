@@ -13,14 +13,14 @@ export const CHALLENGE_TYPES = [
 
 export type ChallengeType = (typeof CHALLENGE_TYPES)[number];
 
-export const TYPE_META: Record<ChallengeType, { label: string; title: string }> = {
-  word: { label: "Word", title: "Five letters. Five tries." },
-  math: { label: "Math", title: "Crunch the numbers." },
-  riddle: { label: "Riddle", title: "Think outside the box." },
-  fact: { label: "Fact", title: "Fact or fiction?" },
-  crossword: { label: "Mini crossword", title: "Small grid, big ideas." },
-  bee: { label: "Spelling bee", title: "Make a beeline." },
-  connections: { label: "Connections", title: "Find the hidden links." },
+export const TYPE_META: Record<ChallengeType, { label: string }> = {
+  word: { label: "Word" },
+  math: { label: "Math" },
+  riddle: { label: "Riddle" },
+  fact: { label: "Fact" },
+  crossword: { label: "Mini crossword" },
+  bee: { label: "Spelling bee" },
+  connections: { label: "Connections" },
 };
 
 /** How each challenge plays, for players who want to know before it comes around. */
@@ -68,7 +68,7 @@ export const TYPE_GUIDE: Record<ChallengeType, { about: string; rules: string[] 
   bee: {
     about: "Make words from seven letters.",
     rules: [
-      "Words need four or more letters and must use the center letter. Letters can repeat.",
+      "Words need four or more letters and must use the center letter. Any letter can be used more than once, including the center one.",
       "Find the target number of words to finish. A pangram uses all seven letters.",
       "A hint gives the first two letters and the length of a word you haven't found.",
     ],

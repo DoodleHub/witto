@@ -36,16 +36,12 @@ type Props = {
 
 export function ChallengeCard({ challenge, play, result, hintUsed, onReveal }: Props) {
   const { dateKey } = challenge;
-  const meta = TYPE_META[challenge.type];
 
   return (
     <Card variant="challenge" className="px-6 pb-7 pt-6 sm:px-12 sm:pb-10 sm:pt-7">
       <Chip>
-        Today&apos;s challenge <span aria-hidden="true">·</span> {meta.label}
+        Today&apos;s challenge <span aria-hidden="true">·</span> {TYPE_META[challenge.type].label}
       </Chip>
-      <h2 className="mt-5 font-serif text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink sm:mt-8 sm:text-[52px]">
-        {meta.title}
-      </h2>
       {challenge.content === null ? (
         <RevealPrompt onReveal={() => onReveal(dateKey)} />
       ) : (
@@ -109,8 +105,7 @@ export function ChallengeCardSkeleton() {
     <Card variant="challenge" className="h-[420px] px-6 pt-6 sm:h-[392px] sm:px-12 sm:pt-7" role="status" aria-busy="true">
       <span className="sr-only">Loading today&apos;s challenge…</span>
       <Skeleton tone="brand" className="h-8 w-56 rounded-full sm:h-9 sm:w-64" />
-      <Skeleton tone="brand" className="mt-6 h-10 w-3/4 rounded-lg sm:mt-9 sm:h-14" />
-      <Skeleton tone="brand" className="mt-5 h-6 w-full max-w-[520px]" />
+      <Skeleton tone="brand" className="mt-6 h-6 w-full max-w-[520px] sm:mt-9" />
       <Skeleton tone="brand" className="mt-2 h-6 w-2/3 max-w-[420px]" />
     </Card>
   );

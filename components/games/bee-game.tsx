@@ -78,7 +78,7 @@ export function BeeGame({ dateKey, content, play, result, hintUsed }: GameProps<
   return (
     <>
       <p className="mt-3 text-[17px] text-ink-secondary sm:mt-4 sm:text-xl">
-        Make words of 4+ letters. Every word must use the center letter. Find {content.goal} to complete today&apos;s challenge.
+        Make words of 4+ letters. Every word must use the center letter. Letters can be reused, including the center one. Find {content.goal} to complete today&apos;s challenge.
       </p>
 
       <div className="mt-6 flex flex-col gap-8 sm:mt-8 md:flex-row md:items-start md:gap-12">

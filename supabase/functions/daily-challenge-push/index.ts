@@ -5,14 +5,14 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import webpush from "npm:web-push@3.6.7";
 
 // Mirrors TYPE_META in lib/challenges.ts.
-const TYPE_META: Record<string, { label: string; title: string }> = {
-  word: { label: "Word", title: "Five letters. Five tries." },
-  math: { label: "Math", title: "Crunch the numbers." },
-  riddle: { label: "Riddle", title: "Think outside the box." },
-  fact: { label: "Fact", title: "Fact or fiction?" },
-  crossword: { label: "Mini crossword", title: "Small grid, big ideas." },
-  bee: { label: "Spelling bee", title: "Make a beeline." },
-  connections: { label: "Connections", title: "Find the hidden links." },
+const TYPE_META: Record<string, { label: string }> = {
+  word: { label: "Word" },
+  math: { label: "Math" },
+  riddle: { label: "Riddle" },
+  fact: { label: "Fact" },
+  crossword: { label: "Mini crossword" },
+  bee: { label: "Spelling bee" },
+  connections: { label: "Connections" },
 };
 
 const PAGE_SIZE = 1000;
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   const meta = TYPE_META[challenge.type];
   const payload = JSON.stringify({
     title: `Witto #${challenge.number} is ready`,
-    body: meta ? `Today's challenge: ${meta.label}. ${meta.title}` : "A fresh puzzle is waiting.",
+    body: meta ? `Today's challenge: ${meta.label}.` : "A fresh puzzle is waiting.",
     url: "/",
     tag: "daily-challenge",
   });
