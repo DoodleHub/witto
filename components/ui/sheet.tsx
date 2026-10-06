@@ -50,8 +50,9 @@ export function Sheet({
       // The inner panel fills the dialog, so a click that lands on the dialog itself is on the backdrop.
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className={cn(
-        "m-0 mt-auto max-h-[88dvh] outline-none w-full max-w-none overflow-y-auto overscroll-contain rounded-t-[22px] border border-line bg-surface text-ink shadow-card backdrop:bg-scrim open:animate-rise",
-        "sm:m-auto sm:max-w-[440px] sm:rounded-[22px]",
+        "m-0 mt-auto max-h-[88dvh] outline-none w-full max-w-none overflow-y-auto overscroll-contain rounded-t-[22px] border border-line bg-surface text-ink shadow-card backdrop:bg-scrim backdrop:animate-fade-in open:animate-sheet-up",
+        // Rises from the bottom edge on phones, like a native sheet, and settles into place as a dialog on wider screens.
+        "sm:m-auto sm:max-w-[440px] sm:rounded-[22px] sm:open:animate-scale-in",
         className,
       )}
     >

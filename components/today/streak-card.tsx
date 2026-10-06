@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { CheckIcon, FlameIcon, SnowflakeIcon } from "@/components/ui/icons";
@@ -37,9 +37,12 @@ export function StreakCard({ today, streak, playedDays }: Props) {
   return (
     <Card className="flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:gap-0 sm:px-10 sm:py-6">
       <div className="flex items-center gap-3.5 sm:w-[240px] sm:shrink-0 sm:border-r sm:border-line sm:py-2">
-        <FlameIcon size={34} className="shrink-0 sm:size-10" />
+        <FlameIcon
+          size={34}
+          className={cn("shrink-0 origin-bottom sm:size-10", doneToday && count > 0 && "animate-flicker")}
+        />
         {today && streak ? (
-          <div>
+          <div className="animate-fade-in">
             <p className="text-[15px] font-semibold text-ink sm:text-lg" aria-live="polite">
               {count} day streak
             </p>
@@ -76,8 +79,10 @@ export function StreakCard({ today, streak, playedDays }: Props) {
           return (
             <li key={day || i} className="flex flex-col items-center gap-2 sm:gap-2.5">
               <span
+                style={{ "--i": i } as CSSProperties}
                 className={cn(
                   "inline-flex size-7 items-center justify-center rounded-full sm:size-9",
+                  day && "stagger animate-scale-in",
                   !day
                     ? "animate-pulse border border-line bg-track"
                     : done
@@ -94,7 +99,7 @@ export function StreakCard({ today, streak, playedDays }: Props) {
                     : label
                 }
               >
-                {done && <CheckIcon size={16} className="sm:size-[18px]" />}
+                {done && <CheckIcon size={16} className="sm:size-[18px] [&_path]:animate-draw" />}
                 {frozen && <SnowflakeIcon size={16} className="sm:size-[18px]" />}
               </span>
               <span

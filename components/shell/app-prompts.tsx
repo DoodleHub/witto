@@ -126,7 +126,7 @@ function Alert({
   busy: boolean;
 }) {
   return (
-    <div role="status" className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
+    <div role="status" className="animate-rise rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-ink">{title}</p>
         <p className="mt-0.5 text-sm text-ink-secondary">{body}</p>

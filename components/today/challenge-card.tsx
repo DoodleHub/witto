@@ -10,6 +10,7 @@ import { WordGame } from "@/components/games/word-game";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { Confetti } from "@/components/ui/confetti";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   TYPE_META,
@@ -41,7 +42,7 @@ export function ChallengeCard({ challenge, play, result, hintUsed, streak, onRev
   const { dateKey } = challenge;
 
   return (
-    <Card variant="challenge" className="px-6 pb-7 pt-6 sm:px-12 sm:pb-10 sm:pt-7">
+    <Card variant="challenge" className="relative px-6 pb-7 pt-6 sm:px-12 sm:pb-10 sm:pt-7">
       <Chip>
         Today&apos;s challenge <span aria-hidden="true">·</span> {TYPE_META[challenge.type].label}
       </Chip>
@@ -59,9 +60,11 @@ function Game({ challenge, play, result, hintUsed, streak }: Omit<Props, "challe
   const shared = { dateKey: challenge.dateKey, result, hintUsed, share };
   // The server shapes the play's state to match the challenge type.
   const state = play ?? {};
+  // Celebrate only a solve that happens while the game is on screen, not one that was already finished when it loaded.
+  const [finishedOnLoad] = useState(!!result);
 
   return (
-    <>
+    <div className="animate-rise">
       {challenge.type === "word" && <WordGame {...shared} content={challenge.content} play={state as WordPlay} />}
       {(challenge.type === "riddle" || challenge.type === "math") && (
         <AnswerGame {...shared} content={challenge.content} play={state as AnswerPlay} />
@@ -70,7 +73,8 @@ function Game({ challenge, play, result, hintUsed, streak }: Omit<Props, "challe
       {challenge.type === "crossword" && <CrosswordGame {...shared} content={challenge.content} play={state as CrosswordPlay} />}
       {challenge.type === "bee" && <BeeGame {...shared} content={challenge.content} play={state as BeePlay} />}
       {challenge.type === "connections" && <ConnectionsGame {...shared} content={challenge.content} play={state as ConnectionsPlay} />}
-    </>
+      {!finishedOnLoad && result?.status === "solved" && <Confetti />}
+    </div>
   );
 }
 
@@ -88,7 +92,7 @@ function RevealPrompt({ onReveal }: { onReveal: () => Promise<void> }) {
   }
 
   return (
-    <div className="mt-5 sm:mt-8">
+    <div className="mt-5 animate-rise sm:mt-8">
       <p className="text-[17px] leading-snug text-ink-secondary sm:text-[22px]">
         The clock starts when you reveal the challenge.
       </p>

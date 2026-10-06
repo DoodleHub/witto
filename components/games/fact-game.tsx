@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
 import { CheckIcon } from "@/components/ui/icons";
@@ -42,28 +42,29 @@ export function FactGame({ dateKey, content, play, result, hintUsed, share }: Ga
               type="button"
               disabled={!!result || out || pending !== null}
               onClick={() => choose(i)}
+              style={{ "--i": i } as CSSProperties}
               className={cn(
-                "flex h-14 items-center gap-3 rounded-[14px] border px-4 text-left text-base font-medium transition-colors sm:h-[60px] sm:text-lg",
+                "flex h-14 items-center gap-3 rounded-[14px] border px-4 text-left text-base font-medium transition-[color,background-color,border-color,scale] duration-150 enabled:active:scale-[0.98] sm:h-[60px] sm:text-lg",
                 result && isAnswer
-                  ? "border-success bg-success-soft text-ink"
+                  ? "animate-pop border-success bg-success-soft text-ink"
                   : result && isPicked
-                    ? "border-danger bg-danger-soft text-ink"
+                    ? "animate-shake border-danger bg-danger-soft text-ink"
                     : i === pending
                       ? "border-brand bg-brand-subtle text-ink"
                       : out
                         ? "border-line bg-surface-muted text-ink-faint line-through"
                         : result
                           ? "border-line bg-surface text-ink-muted"
-                          : "border-line-strong bg-surface text-ink shadow-sm hover:border-brand hover:bg-brand-subtle",
+                          : "stagger animate-rise border-line-strong bg-surface text-ink shadow-sm hover:border-brand hover:bg-brand-subtle",
               )}
             >
               <span
                 className={cn(
                   "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                  result && isAnswer ? "bg-success text-white" : "bg-surface-muted text-ink-secondary",
+                  result && isAnswer ? "animate-scale-in bg-success text-white" : "bg-surface-muted text-ink-secondary",
                 )}
               >
-                {result && isAnswer ? <CheckIcon size={15} /> : LETTERS[i]}
+                {result && isAnswer ? <CheckIcon size={15} className="[&_path]:animate-draw" /> : LETTERS[i]}
               </span>
               {opt}
             </button>

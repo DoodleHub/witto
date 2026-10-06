@@ -232,10 +232,21 @@
   --shadow-card: var(--elev-card);
   --shadow-brand: var(--elev-brand);
 
+  /* Motion: ease-out-quint for things arriving, a slight overshoot for things that should feel tactile. */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   --animate-pop: pop 160ms ease-out;
   --animate-shake: shake 360ms ease-in-out;
   --animate-flip: flip 420ms ease-in-out both;
   --animate-rise: rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-fade-in: fade-in 240ms ease-out both;
+  --animate-scale-in: scale-in 320ms var(--ease-spring) both;
+  --animate-sheet-up: sheet-up 420ms var(--ease-drawer) both;
+  --animate-draw: draw 360ms var(--ease-out-quint) 160ms both;
+  --animate-underline: underline 280ms var(--ease-out-quint) both;
+  --animate-flicker: flicker 2.6s ease-in-out infinite;
 }
 
 @keyframes pop {
@@ -259,12 +270,124 @@
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.85); }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+}
+/* Strokes a 24px-grid icon path on; the dash is longer than any of the icon paths it is used on. */
+@keyframes draw {
+  from { stroke-dasharray: 30; stroke-dashoffset: 30; }
+  to { stroke-dasharray: 30; stroke-dashoffset: 0; }
+}
+@keyframes underline {
+  from { transform: scaleX(0); opacity: 0; }
+}
+/* The winning row in the word game: each tile jumps once, like a little cheer. */
+@keyframes hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-14px); }
+  70% { transform: translateY(2px); }
+}
+@keyframes flicker {
+  0%, 100% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.06) rotate(-3deg); }
+  60% { transform: scale(0.98) rotate(2deg); }
+}
+/* A confetti piece: shoots up and out to its own --x/--y, then falls and fades. */
+@keyframes confetti {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  35% { transform: translate(calc(var(--x) * 0.7), var(--y)) rotate(calc(var(--r) * 0.5)); opacity: 1; }
+  100% { transform: translate(var(--x), calc(var(--y) + 220px)) rotate(var(--r)); opacity: 0; }
+}
+
+/* Staggers a list's entrance: set --i to the item's index. */
+@utility stagger {
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* ==========================================================================
+   Route transitions (React <ViewTransition>, see components/shell/page-transition.tsx).
+   Today and Leaderboard sit side by side like tabs, so moving between them slides in that direction.
+   ========================================================================== */
+
+::view-transition-old(.nav-forward) {
+  --slide-offset: -48px;
+  animation:
+    140ms ease-in both vt-fade reverse,
+    360ms var(--ease-out-quint) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 48px;
+  animation:
+    220ms ease-out 120ms both vt-fade,
+    360ms var(--ease-out-quint) both vt-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide-offset: 48px;
+  animation:
+    140ms ease-in both vt-fade reverse,
+    360ms var(--ease-out-quint) both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -48px;
+  animation:
+    220ms ease-out 120ms both vt-fade,
+    360ms var(--ease-out-quint) both vt-slide;
+}
+/* Sign in and create account are the same place with a different form, so they crossfade. */
+::view-transition-old(.crossfade) {
+  animation: 140ms ease-in both vt-fade reverse;
+}
+::view-transition-new(.crossfade) {
+  animation: 220ms ease-out 80ms both vt-fade;
+}
+
+@keyframes vt-fade {
+  from { opacity: 0; }
+}
+@keyframes vt-slide {
+  from { translate: var(--slide-offset) 0; }
+}
+
+/* The header and tab bar stay put while the page slides, and sit above it. */
+::view-transition-group(site-header),
+::view-transition-group(tab-bar) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header),
+::view-transition-old(tab-bar) {
+  display: none;
+}
+::view-transition-new(site-header),
+::view-transition-new(tab-bar) {
+  animation: none;
+}
+
+/* Taps during a transition reach the live page instead of the overlay. */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
 

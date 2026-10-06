@@ -96,6 +96,7 @@ export function WordGame({ dateKey, play, result, hintUsed, share }: GameProps<W
           const isCurrent = r === guesses.length && !done;
           const letters = submitted ?? (isCurrent ? current : "");
           const rowMarks = submitted ? marks[r] : null;
+          const winning = result?.status === "solved" && r === guesses.length - 1;
           return (
             <div
               key={isCurrent ? `cur-${shake}` : r}
@@ -109,7 +110,14 @@ export function WordGame({ dateKey, play, result, hintUsed, share }: GameProps<W
                     key={c}
                     role="gridcell"
                     aria-label={ch ? `${ch}${rowMarks ? `, ${rowMarks[c]}` : ""}` : "empty"}
-                    style={rowMarks ? { animationDelay: `${c * 90}ms` } : undefined}
+                    style={
+                      winning
+                        ? // Once the whole row has flipped, each tile hops in turn.
+                          { animation: `flip 420ms ease-in-out ${c * 90}ms both, hop 480ms ease-out ${LEN * 90 + 360 + c * 90}ms` }
+                        : rowMarks
+                          ? { animationDelay: `${c * 90}ms` }
+                          : undefined
+                    }
                     className={cn(
                       "flex size-[52px] items-center justify-center rounded-lg border-2 text-2xl font-bold uppercase sm:size-[60px] sm:text-[28px]",
                       rowMarks
@@ -162,7 +170,7 @@ export function WordGame({ dateKey, play, result, hintUsed, share }: GameProps<W
                       onClick={() => press(key)}
                       aria-label={key === "backspace" ? "Delete" : key}
                       className={cn(
-                        "flex h-12 min-w-0 items-center justify-center rounded-md text-sm font-semibold uppercase transition-colors sm:h-[52px] sm:text-base",
+                        "flex h-12 min-w-0 items-center justify-center rounded-md text-sm font-semibold uppercase transition-[color,background-color,scale] duration-150 active:scale-90 sm:h-[52px] sm:text-base",
                         key.length > 1 ? "flex-[1.5] px-1 text-xs sm:text-sm" : "flex-1",
                         mark ? tileTone[mark] : "bg-surface text-ink shadow-sm ring-1 ring-line hover:bg-surface-muted",
                       )}

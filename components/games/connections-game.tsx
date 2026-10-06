@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { HintRow } from "@/components/ui/hint-row";
@@ -34,6 +34,8 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed, shar
   const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [shake, setShake] = useState(0);
+  // Each shuffle remounts the tiles so they deal back in, rather than jumping to their new places.
+  const [shuffles, setShuffles] = useState(0);
 
   const solved = play.solved ?? [];
   const mistakes = play.mistakes ?? 0;
@@ -82,7 +84,7 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed, shar
         {shownGroups.map((g) => (
           <div
             key={g.group}
-            className={cn("flex animate-rise flex-col items-center justify-center rounded-xl px-3 py-3 text-center sm:min-h-[76px]", GROUP_TONES[g.group])}
+            className={cn("flex animate-scale-in flex-col items-center justify-center rounded-xl px-3 py-3 text-center sm:min-h-[76px]", GROUP_TONES[g.group])}
           >
             <p className="text-sm font-bold uppercase tracking-[0.06em] text-ink sm:text-base">{g.theme}</p>
             <p className="text-sm text-ink-secondary sm:text-base">{g.words.join(", ")}</p>
@@ -91,17 +93,19 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed, shar
 
         {!result && (
           <div key={shake} className={cn("grid grid-cols-4 gap-2 sm:gap-2.5", shake > 0 && "animate-shake")}>
-            {remaining.map((w) => {
+            {remaining.map((w, i) => {
               const on = selected.includes(w);
               return (
                 <button
-                  key={w}
+                  key={`${w}-${shuffles}`}
                   type="button"
+                  style={{ "--i": i } as CSSProperties}
                   onClick={() => toggle(w)}
                   aria-pressed={on}
                   className={cn(
-                    "flex h-16 items-center justify-center rounded-xl px-1 text-[11px] font-bold uppercase leading-tight transition-colors min-[400px]:text-xs sm:h-[76px] sm:text-[15px]",
-                    on ? "bg-brand text-on-brand" : "bg-track text-ink hover:bg-brand-soft",
+                    "flex h-16 items-center justify-center rounded-xl px-1 text-[11px] font-bold uppercase leading-tight transition-[color,background-color,scale] duration-150 active:scale-95 min-[400px]:text-xs sm:h-[76px] sm:text-[15px]",
+                    on ? "animate-pop bg-brand text-on-brand" : "bg-track text-ink hover:bg-brand-soft",
+                    shuffles > 0 && !on && "stagger animate-scale-in",
                   )}
                 >
                   {w}
@@ -119,7 +123,10 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed, shar
             {Array.from({ length: MAX_MISTAKES }, (_, i) => (
               <span
                 key={i}
-                className={cn("size-2.5 rounded-full", i < MAX_MISTAKES - mistakes ? "bg-ink-secondary" : "bg-track")}
+                className={cn(
+                  "size-2.5 rounded-full transition-[background-color,scale] duration-300",
+                  i < MAX_MISTAKES - mistakes ? "bg-ink-secondary" : "scale-50 bg-track",
+                )}
               />
             ))}
           </div>
@@ -129,9 +136,10 @@ export function ConnectionsGame({ dateKey, content, play, result, hintUsed, shar
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2.5">
             <Button
               variant="secondary"
-              onClick={() =>
-                setState({ ...state, order: seededShuffle(state.order, `${Date.now()}`) })
-              }
+              onClick={() => {
+                setState({ ...state, order: seededShuffle(state.order, `${Date.now()}`) });
+                setShuffles((n) => n + 1);
+              }}
             >
               Shuffle
             </Button>

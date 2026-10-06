@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
@@ -83,7 +83,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
           {[podium[1], podium[0], podium[2]].map((e, i) => {
             const first = i === 1;
             return (
-              <PodiumCard key={e?.id ?? i} first={first} you={e?.you} interactive={!!e}>
+              <PodiumCard key={e?.id ?? i} first={first} you={e?.you} interactive={!!e} order={[1, 0, 2][i]}>
                 {e ? (
                   <>
                     <div className="relative">
@@ -126,8 +126,8 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                 {shownPeriod === "today" ? "No one has solved today's puzzle yet." : "No solves yet this period."} Be the first!
               </li>
             )}
-            {rows.map((e) => (
-              <Row key={e.id} entry={e} rank={e.rank} period={shownPeriod} onOpen={() => setSelected(e)} />
+            {rows.map((e, i) => (
+              <Row key={e.id} entry={e} rank={e.rank} period={shownPeriod} order={i + 3} onOpen={() => setSelected(e)} />
             ))}
             {youBelow && you && (
               <>
@@ -136,7 +136,7 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                     ⋯
                   </li>
                 )}
-                <Row entry={you} rank={you.rank} period={shownPeriod} onOpen={() => setSelected(you)} />
+                <Row entry={you} rank={you.rank} period={shownPeriod} order={TOP_ROWS} onOpen={() => setSelected(you)} />
               </>
             )}
             {!signedIn && (
@@ -204,8 +204,14 @@ function PeriodTabs({ period, onChange }: { period: Period; onChange?: (period: 
     <div
       role="tablist"
       aria-label="Leaderboard period"
-      className="mx-auto mt-6 grid max-w-[420px] grid-cols-3 rounded-full border border-line bg-surface p-1 shadow-sm sm:mt-8"
+      className="relative mx-auto mt-6 grid max-w-[420px] grid-cols-3 rounded-full border border-line bg-surface p-1 shadow-sm sm:mt-8"
     >
+      {/* One pill slides under the selected tab, rather than each tab swapping its own background. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-full bg-brand shadow-brand transition-transform duration-300 ease-[var(--ease-out-quint)]"
+        style={{ transform: `translateX(${PERIODS.findIndex((p) => p.id === period) * 100}%)` }}
+      />
       {PERIODS.map((p) => (
         <button
           key={p.id}
@@ -214,8 +220,8 @@ function PeriodTabs({ period, onChange }: { period: Period; onChange?: (period: 
           disabled={!onChange}
           onClick={() => onChange?.(p.id)}
           className={cn(
-            "h-9 rounded-full text-sm font-semibold transition-colors sm:h-10 sm:text-[15px]",
-            period === p.id ? "bg-brand text-on-brand shadow-brand" : "text-ink-secondary enabled:hover:text-ink",
+            "relative h-9 rounded-full text-sm font-semibold transition-colors duration-300 sm:h-10 sm:text-[15px]",
+            period === p.id ? "text-on-brand" : "text-ink-secondary enabled:hover:text-ink",
           )}
         >
           {p.label}
@@ -229,19 +235,24 @@ function PodiumCard({
   first,
   you,
   interactive,
+  order = 0,
   children,
 }: {
   first: boolean;
   you?: boolean;
   interactive?: boolean;
+  /** Where it comes in the entrance: first place lands before second and third. */
+  order?: number;
   children: ReactNode;
 }) {
   return (
     <Card
       variant={first ? "challenge" : "surface"}
+      style={{ "--i": order * 2 } as CSSProperties}
       className={cn(
         "relative flex flex-col items-center px-2 text-center",
-        interactive && "transition-transform has-[button:active]:scale-[0.98] has-[button:focus-visible]:ring-4 has-[button:focus-visible]:ring-[var(--focus-ring)]",
+        interactive &&
+          "stagger animate-rise transition-transform has-[button:active]:scale-[0.98] has-[button:focus-visible]:ring-4 has-[button:focus-visible]:ring-[var(--focus-ring)]",
         first ? "pb-5 pt-5 sm:pb-8 sm:pt-7" : "pb-4 pt-4 sm:pb-6 sm:pt-6",
         you && "ring-2 ring-brand",
       )}
@@ -346,12 +357,26 @@ function PlayerButton({ name, onClick }: { name: string; onClick: () => void }) 
   );
 }
 
-function Row({ entry, rank, period, onOpen }: { entry: Entry; rank: number | null; period: Period; onOpen: () => void }) {
+function Row({
+  entry,
+  rank,
+  period,
+  order = 0,
+  onOpen,
+}: {
+  entry: Entry;
+  rank: number | null;
+  period: Period;
+  /** Its place in the board's staggered entrance. */
+  order?: number;
+  onOpen: () => void;
+}) {
   const notPlayed = entry.you && rank === null;
   return (
     <li
+      style={{ "--i": order } as CSSProperties}
       className={cn(
-        "relative grid transition-colors hover:bg-surface-muted has-[button:focus-visible]:bg-surface-muted grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5",
+        "stagger relative grid animate-rise transition-colors hover:bg-surface-muted has-[button:focus-visible]:bg-surface-muted grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5",
         entry.you && "bg-brand-subtle",
       )}
     >

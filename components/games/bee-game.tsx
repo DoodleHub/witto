@@ -28,6 +28,8 @@ export function BeeGame({ dateKey, content, play, result, hintUsed, share }: Gam
   const [outer, setOuter] = useState(content.outer);
   const [current, setCurrent] = useState("");
   const [flash, setFlash] = useState<{ text: string; good: boolean; id: number } | null>(null);
+  // Words found before the game loaded sit still; only new finds animate into the list.
+  const [foundOnLoad] = useState(() => new Set(play.found ?? []));
   const letters = new Set([content.center, ...content.outer]);
   const isPangram = (w: string) => [...letters].every((l) => w.includes(l));
 
@@ -89,7 +91,10 @@ export function BeeGame({ dateKey, content, play, result, hintUsed, share }: Gam
                 [...current].map((ch, i) => (
                   <span
                     key={i}
-                    className={cn(ch === content.center ? "text-brand-ink" : letters.has(ch) ? "text-ink" : "text-ink-faint")}
+                    className={cn(
+                      "inline-block animate-pop",
+                      ch === content.center ? "text-brand-ink" : letters.has(ch) ? "text-ink" : "text-ink-faint",
+                    )}
                   >
                     {ch}
                   </span>
@@ -117,7 +122,8 @@ export function BeeGame({ dateKey, content, play, result, hintUsed, share }: Gam
                     type="button"
                     onClick={() => setCurrent((c) => c + l)}
                     className={cn(
-                      "absolute flex items-center justify-center text-2xl font-bold uppercase transition-transform active:scale-90",
+                      // Keyed by letter, so a shuffle glides each hex to its new slot.
+                      "absolute flex items-center justify-center text-2xl font-bold uppercase transition-[left,top,scale,background-color] duration-300 ease-[var(--ease-out-quint)] active:scale-90 active:duration-100",
                       i === 0 ? "bg-brand text-on-brand" : "bg-track text-ink hover:bg-brand-soft",
                     )}
                     style={{
@@ -166,6 +172,7 @@ export function BeeGame({ dateKey, content, play, result, hintUsed, share }: Gam
                 className={cn(
                   "rounded-md px-2.5 py-1 text-sm font-medium capitalize",
                   isPangram(w) ? "bg-brand text-on-brand" : "bg-surface-muted text-ink",
+                  !foundOnLoad.has(w) && "animate-scale-in",
                 )}
               >
                 {w}

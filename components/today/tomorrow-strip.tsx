@@ -37,7 +37,7 @@ export function TomorrowStrip() {
                 aria-haspopup="dialog"
                 onClick={() => openGuide(t)}
                 className={cn(
-                  "flex size-11 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-4 focus-visible:ring-[var(--focus-ring)] sm:size-14",
+                  "flex size-11 items-center justify-center rounded-full outline-none transition-[color,background-color,translate,scale] duration-200 hover:-translate-y-0.5 active:scale-90 focus-visible:ring-4 focus-visible:ring-[var(--focus-ring)] sm:size-14",
                   open === t ? "bg-brand-soft text-brand-ink" : "text-ink-muted hover:bg-surface-muted hover:text-ink",
                 )}
               >

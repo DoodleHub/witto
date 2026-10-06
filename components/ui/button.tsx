@@ -27,7 +27,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex select-none items-center justify-center gap-2 font-semibold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed",
+        "inline-flex select-none items-center justify-center gap-2 font-semibold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,scale] duration-150 enabled:active:scale-[0.97] disabled:cursor-not-allowed",
         variants[variant],
         sizes[size],
         className,

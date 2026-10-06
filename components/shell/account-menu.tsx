@@ -56,7 +56,7 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-30 mt-2 w-60 rounded-xl border border-line bg-surface p-1.5 shadow-card"
+          className="absolute right-0 top-full z-30 mt-2 w-60 origin-top-right animate-scale-in rounded-xl border border-line bg-surface p-1.5 shadow-card"
         >
           <div className="px-3 py-2">
             <p className="truncate font-semibold text-ink">{user.displayName}</p>

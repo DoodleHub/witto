@@ -27,11 +27,11 @@ export function ResultBanner({
       <div className="flex items-start gap-3">
         <span
           className={cn(
-            "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full",
+            "mt-0.5 inline-flex size-8 shrink-0 animate-scale-in items-center justify-center rounded-full [animation-delay:120ms]",
             solved ? "bg-success text-white" : "bg-ink-faint text-white",
           )}
         >
-          <CheckIcon size={18} />
+          <CheckIcon size={18} className="[&_path]:animate-draw" />
         </span>
         <div>
           <p className="font-semibold text-ink">

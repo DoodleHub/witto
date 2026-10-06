@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { getSessionUser, safeNext } from "@/lib/auth";
 import { signUp } from "../actions";
+import { PageTransition } from "@/components/shell/page-transition";
 
 export const metadata: Metadata = {
   title: "Create account — witto",
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 export default async function SignupPage({ searchParams }: PageProps<"/signup">) {
   const next = safeNext((await searchParams).next);
   if (await getSessionUser()) redirect(next);
-  return <AuthForm mode="signUp" action={signUp} next={next} />;
+  return (
+    <PageTransition>
+      <AuthForm mode="signUp" action={signUp} next={next} />
+    </PageTransition>
+  );
 }

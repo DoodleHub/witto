@@ -10,7 +10,7 @@ export function NextChallengeCountdown() {
 
   if (secondsLeft === null) return <Skeleton className="mx-auto mt-5 h-5 w-48 sm:mt-10 sm:h-6 sm:w-56" />;
   return (
-    <p className="mt-5 text-[13px] text-ink-muted sm:mt-10 sm:text-base">
+    <p className="mt-5 animate-fade-in text-[13px] text-ink-muted sm:mt-10 sm:text-base">
       Next challenge in{" "}
       <time dateTime={`PT${secondsLeft}S`} className="font-semibold tabular-nums text-ink-secondary">
         {formatCountdown(secondsLeft)}

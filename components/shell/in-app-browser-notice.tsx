@@ -47,7 +47,7 @@ export function InAppBrowserNotice() {
 
   return (
     <div className="mx-4 mt-1 mb-2">
-      <div role="status" className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
+      <div role="status" className="animate-rise rounded-xl border border-brand-line bg-brand-soft px-4 py-3">
         <p className="text-sm font-semibold text-ink">Open witto in your browser</p>
         <p className="mt-0.5 text-sm text-ink-secondary">
           You’re viewing witto {from}, so it can’t be added to your home screen and your sign-in won’t stick.

@@ -94,7 +94,7 @@ export function AuthForm({
                   )}
                 </div>
                 {error ? (
-                  <p id={`${f.name}-error`} className="text-sm text-danger">
+                  <p id={`${f.name}-error`} className="animate-rise text-sm text-danger">
                     {error}
                   </p>
                 ) : (
@@ -109,7 +109,7 @@ export function AuthForm({
           })}
 
           {state.message && (
-            <p role="alert" className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
+            <p role="alert" className="animate-rise rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
               {state.message}
             </p>
           )}
@@ -124,6 +124,7 @@ export function AuthForm({
         {signUp ? "Already have an account? " : "New to witto? "}
         <Link
           href={{ pathname: signUp ? "/login" : "/signup", query: next === "/" ? {} : { next } }}
+          transitionTypes={["crossfade"]}
           className="font-semibold text-brand-ink hover:underline"
         >
           {signUp ? "Sign in" : "Create an account"}
