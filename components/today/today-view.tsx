@@ -7,6 +7,7 @@ import { refreshPlay, streakFor, useProgress } from "@/lib/progress";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 import { ChallengeCard, ChallengeCardSkeleton } from "./challenge-card";
+import { InviteStrip } from "./invite-strip";
 import { NextChallengeCountdown } from "./next-challenge-countdown";
 import { StreakCard } from "./streak-card";
 import { TomorrowStrip } from "./tomorrow-strip";
@@ -126,6 +127,10 @@ function TodayShell({ challenge, streak }: { challenge: ReactNode; streak: React
 
       <div className="mt-8 sm:mt-10">
         <TomorrowStrip />
+      </div>
+
+      <div className="mt-8 border-t border-line pt-6 sm:mt-10 sm:pt-8">
+        <InviteStrip />
       </div>
     </div>
   );

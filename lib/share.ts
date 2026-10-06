@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   TYPE_META,
   type BeeContent,
@@ -45,6 +46,50 @@ export function shareText({
   return [`witto · ${TYPE_META[challenge.type].label}`, stats.join(" · "), ...grid]
     .filter(Boolean)
     .join("\n");
+}
+
+/** What witto says about itself when a player invites a friend. */
+export const INVITE_TEXT = "I've been playing witto: one fresh puzzle a day, the same one for everyone. Come race me on today's.";
+
+export type ShareState = "idle" | "copied" | "error";
+
+/**
+ * Shares `text` with a link to witto through the system share sheet where there is one (phones and the
+ * installed app), and copies it to the clipboard everywhere else. `state` flashes "copied" or "error" for a
+ * couple of seconds so the button can say what happened.
+ */
+export function useShare() {
+  const [state, setState] = useState<ShareState>("idle");
+
+  useEffect(() => {
+    if (state === "idle") return;
+    const timer = setTimeout(() => setState("idle"), 2000);
+    return () => clearTimeout(timer);
+  }, [state]);
+
+  async function share(text: string) {
+    const message = `${text}\n${location.origin}`;
+    // Only touch devices get the share sheet: on desktop it's a detour from simply pasting.
+    const sheet = typeof navigator.share === "function" && matchMedia("(pointer: coarse)").matches;
+    if (sheet) {
+      try {
+        await navigator.share({ text: message });
+        return;
+      } catch (error) {
+        // The player closed the sheet; anything else falls back to copying.
+        if ((error as Error).name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(message);
+      setState("copied");
+    } catch (error) {
+      console.error("Failed to copy to the clipboard", error);
+      setState("error");
+    }
+  }
+
+  return { state, share };
 }
 
 function summary(challenge: DailyChallenge, play: unknown, solved: boolean): { headline: string; grid: string[] } {

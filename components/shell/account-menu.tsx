@@ -8,6 +8,7 @@ import { PlayerSheet } from "@/components/leaderboard/player-sheet";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import type { SessionUser } from "@/lib/auth";
+import { INVITE_TEXT, useShare } from "@/lib/share";
 import { disablePush, enablePush, getPushState, type PushState } from "@/lib/push";
 import { useToday } from "@/lib/today";
 
@@ -73,6 +74,7 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
           >
             Your stats
           </button>
+          <InviteItem />
           <PushToggle />
           <form action={signOut}>
             <SignOutButton />
@@ -85,6 +87,22 @@ export function AccountMenu({ user }: { user: SessionUser | null }) {
         onClose={() => setStatsOpen(false)}
       />
     </div>
+  );
+}
+
+/** Invites a friend from anywhere in the app. The menu stays open on desktop so "Link copied" can show. */
+function InviteItem() {
+  const { state, share } = useShare();
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={() => share(INVITE_TEXT)}
+      aria-live="polite"
+      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-secondary hover:bg-surface-muted hover:text-ink"
+    >
+      {state === "copied" ? "Link copied" : state === "error" ? "Couldn't copy the link" : "Invite friends"}
+    </button>
   );
 }
 

@@ -235,6 +235,13 @@ export const ShareIcon = (p: IconProps) => (
   </Base>
 );
 
+export const UserPlusIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="9.5" cy="8" r="3.75" />
+    <path d="M2.75 20c.6-3.6 3.3-5.75 6.75-5.75s6.15 2.15 6.75 5.75M18.5 8v6M15.5 11h6" />
+  </Base>
+);
+
 export const TYPE_ICONS: Record<ChallengeType, (p: IconProps) => React.ReactElement> = {
   word: WordIcon,
   math: CalculatorIcon,
