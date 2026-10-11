@@ -38,6 +38,29 @@ export async function fetchBoard(
   }));
 }
 
+/** A player who finished the day's challenge without solving it. */
+export type Attempt = Omit<Entry, "rank" | "value">;
+
+/** Who finished `dateKey`'s challenge without solving it (up to `limit`, plus the signed-in player), and how many did. */
+export async function fetchAttempts(
+  supabase: SupabaseClient<Database>,
+  dateKey: string,
+  limit: number,
+): Promise<{ attempts: Attempt[]; total: number }> {
+  const { data, error } = await supabase.rpc("leaderboard_attempts", { on_day: dateKey, max_rows: limit });
+  if (error) throw error;
+  return {
+    attempts: data.map((row) => ({
+      id: row.user_id,
+      name: row.display_name,
+      streak: row.streak,
+      solved: row.solved,
+      you: row.is_you,
+    })),
+    total: data[0]?.total ?? 0,
+  };
+}
+
 /** One player's public record, as returned by the `player_profile` SQL function. Times are in ms. */
 export type PlayerProfile = {
   display_name: string;

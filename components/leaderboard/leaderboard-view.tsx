@@ -8,7 +8,7 @@ import { cn } from "@/components/ui/cn";
 import { CheckIcon, CrownIcon, FlameIcon } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/date";
-import { fetchBoard, toneFor, type Entry, type Period } from "@/lib/leaderboard";
+import { fetchAttempts, fetchBoard, toneFor, type Attempt, type Entry, type Period } from "@/lib/leaderboard";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 import { PlayerSheet } from "./player-sheet";
@@ -20,6 +20,8 @@ const PERIODS: { id: Period; label: string }[] = [
 ];
 
 const TOP_ROWS = 10;
+/** How many of the day's failed plays to list under the board. */
+const ATTEMPT_ROWS = 20;
 
 function formatValue(period: Period, value: number | null) {
   if (value === null) return "–";
@@ -33,6 +35,9 @@ function formatSolved(solved: number) {
 /** Loaded boards by `period:day`; null when the fetch failed. */
 type Boards = Record<string, Entry[] | null>;
 
+/** The day's failed plays by day; null when the fetch failed. */
+type Attempts = Record<string, { attempts: Attempt[]; total: number } | null>;
+
 export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   const today = useToday();
   const [period, setPeriod] = useState<Period>("today");
@@ -40,7 +45,8 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   // The period on screen: it lags `period` while a newly picked board is still loading, so the old one stays up
   // instead of flashing back to skeletons.
   const [shownPeriod, setShownPeriod] = useState<Period>(period);
-  const [selected, setSelected] = useState<Entry | null>(null);
+  const [attempts, setAttempts] = useState<Attempts>({});
+  const [selected, setSelected] = useState<Pick<Entry, "id" | "name" | "you"> | null>(null);
   if (shownPeriod !== period && today && `${period}:${today}` in boards) setShownPeriod(period);
 
   // Load every period up front so switching tabs is instant.
@@ -55,6 +61,14 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
         save(null);
       });
     }
+    fetchAttempts(supabase, today, ATTEMPT_ROWS).then(
+      (result) => !cancelled && setAttempts((a) => ({ ...a, [today]: result })),
+      (error) => {
+        // The board stands on its own, so a failure here just leaves the attempts off.
+        console.error("Failed to load today's attempts", error);
+        if (!cancelled) setAttempts((a) => ({ ...a, [today]: null }));
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -70,7 +84,10 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
 
   const podium = ranked.slice(0, 3);
   const rows = ranked.slice(3, TOP_ROWS);
-  const youBelow = you && (you.rank === null || you.rank > TOP_ROWS);
+  const dayAttempts = (shownPeriod === "today" && !loading && today && attempts[today]) || null;
+  // A player who has already had a go today shows up among the attempts instead of being asked to play.
+  const youAttempted = shownPeriod === "today" && !!today && !!attempts[today]?.attempts.some((a) => a.you);
+  const youBelow = you && (you.rank === null || you.rank > TOP_ROWS) && !(you.rank === null && youAttempted);
 
   return (
     <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
@@ -149,10 +166,19 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
             )}
           </ol>
         </Card>
+
+        {dayAttempts && dayAttempts.attempts.length > 0 && (
+          <AttemptList
+            attempts={dayAttempts.attempts}
+            total={dayAttempts.total}
+            order={rows.length + 4}
+            onOpen={setSelected}
+          />
+        )}
       </div>
 
       <p className="mt-5 text-center text-sm text-ink-muted">
-        Today ranks the fastest solves. Weekly and monthly rank points: up to 100 per puzzle, less for slower
+        Today ranks the fastest solves, with everyone who didn&apos;t solve it listed below. Weekly and monthly rank points: up to 100 per puzzle, less for slower
         solves or a hint. Tap a player to see their record.
       </p>
 
@@ -410,5 +436,74 @@ function Row({
         )}
       </span>
     </li>
+  );
+}
+
+/** Players who finished today's puzzle without solving it, under the ranked board so the day's whole field shows. */
+function AttemptList({
+  attempts,
+  total,
+  order,
+  onOpen,
+}: {
+  attempts: Attempt[];
+  /** Every failed play today, including any beyond the ones listed. */
+  total: number;
+  /** Where the list starts in the board's staggered entrance. */
+  order: number;
+  onOpen: (player: Attempt) => void;
+}) {
+  // The signed-in player is always listed, even past the cutoff, so they don't count towards the rest.
+  const more = total - attempts.length;
+  return (
+    <Card className="mt-3 overflow-hidden sm:mt-5">
+      <h2 className="flex items-baseline justify-between border-b border-line px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted sm:px-6">
+        <span>Also played today</span>
+        <span className="tabular-nums">{total.toLocaleString("en-US")}</span>
+      </h2>
+      <ol>
+        {attempts.map((a, i) => (
+          <li
+            key={a.id}
+            style={{ "--i": order + i } as CSSProperties}
+            className={cn(
+              "stagger relative grid animate-rise transition-colors hover:bg-surface-muted has-[button:focus-visible]:bg-surface-muted grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5",
+              a.you && "bg-brand-subtle",
+            )}
+          >
+            <span aria-hidden="true" className="text-[15px] font-semibold text-ink-faint">
+              –
+            </span>
+            <span className="flex min-w-0 items-center gap-3">
+              <Avatar name={a.name} you={a.you} tone={toneFor(a.id)} size={36} />
+              <span className="min-w-0">
+                <span className="flex min-w-0 items-center font-semibold text-ink">
+                  <PlayerButton name={a.name} onClick={() => onOpen(a)} />
+                  {a.you && <span className="ml-2 shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">You</span>}
+                </span>
+                <span className="flex items-center gap-1 text-[13px] text-ink-muted">
+                  <span className="sm:hidden">
+                    <FlameIcon size={13} className="-mt-0.5 inline" /> {a.streak} ·
+                  </span>
+                  {formatSolved(a.solved)}
+                </span>
+              </span>
+            </span>
+            <span className="hidden items-center justify-end gap-1.5 text-[15px] tabular-nums text-ink-secondary sm:flex">
+              <FlameIcon size={16} />
+              {a.streak}
+            </span>
+            <span className="text-right text-[15px] font-semibold">
+              <span className="text-danger">Incorrect</span>
+            </span>
+          </li>
+        ))}
+        {more > 0 && (
+          <li className="px-4 py-3 text-center text-sm text-ink-muted sm:px-6">
+            and {more.toLocaleString("en-US")} more
+          </li>
+        )}
+      </ol>
+    </Card>
   );
 }

@@ -205,7 +205,7 @@ function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
                       <span className="block text-[13px] text-ink-muted">{play.points} pts</span>
                     </>
                   ) : (
-                    <span className="font-semibold text-danger">Missed</span>
+                    <span className="font-semibold text-danger">Incorrect</span>
                   )}
                 </span>
               </li>
