@@ -38,6 +38,39 @@ export async function fetchBoard(
   }));
 }
 
+/** A player who took on the day's puzzle without solving it: they got it wrong, or they're still playing. */
+export type Attempt = {
+  id: string;
+  name: string;
+  status: "failed" | "playing";
+  streak: number;
+  /** Puzzles solved, all time. */
+  solved: number;
+  you: boolean;
+};
+
+/** Up to `limit` unsolved attempts at `dateKey`'s puzzle, plus the signed-in player's, and how many there are in all. */
+export async function fetchAttempts(
+  supabase: SupabaseClient<Database>,
+  dateKey: string,
+  limit: number,
+): Promise<{ attempts: Attempt[]; total: number }> {
+  const { data, error } = await supabase.rpc("leaderboard_attempts", { on_day: dateKey, max_rows: limit });
+  if (error) throw error;
+  return {
+    attempts: data.map((row) => ({
+      id: row.user_id,
+      name: row.display_name,
+      // The function only ever returns these two, but the generated types can only call the column text.
+      status: row.status as Attempt["status"],
+      streak: row.streak,
+      solved: row.solved,
+      you: row.is_you,
+    })),
+    total: data[0]?.total ?? 0,
+  };
+}
+
 /** One player's public record, as returned by the `player_profile` SQL function. Times are in ms. */
 export type PlayerProfile = {
   display_name: string;

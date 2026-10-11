@@ -5,10 +5,10 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
-import { CheckIcon, CrownIcon, FlameIcon } from "@/components/ui/icons";
+import { CheckIcon, ClockIcon, CloseIcon, CrownIcon, FlameIcon } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/date";
-import { fetchBoard, toneFor, type Entry, type Period } from "@/lib/leaderboard";
+import { fetchAttempts, fetchBoard, toneFor, type Attempt, type Entry, type Period } from "@/lib/leaderboard";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
 import { PlayerSheet } from "./player-sheet";
@@ -20,6 +20,7 @@ const PERIODS: { id: Period; label: string }[] = [
 ];
 
 const TOP_ROWS = 10;
+const ATTEMPT_ROWS = 20;
 
 function formatValue(period: Period, value: number | null) {
   if (value === null) return "–";
@@ -33,6 +34,9 @@ function formatSolved(solved: number) {
 /** Loaded boards by `period:day`; null when the fetch failed. */
 type Boards = Record<string, Entry[] | null>;
 
+/** Loaded unsolved attempts by day; null when the fetch failed. */
+type Attempts = Record<string, { attempts: Attempt[]; total: number } | null>;
+
 export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   const today = useToday();
   const [period, setPeriod] = useState<Period>("today");
@@ -40,7 +44,8 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
   // The period on screen: it lags `period` while a newly picked board is still loading, so the old one stays up
   // instead of flashing back to skeletons.
   const [shownPeriod, setShownPeriod] = useState<Period>(period);
-  const [selected, setSelected] = useState<Entry | null>(null);
+  const [attemptsByDay, setAttemptsByDay] = useState<Attempts>({});
+  const [selected, setSelected] = useState<Pick<Entry, "id" | "name" | "you"> | null>(null);
   if (shownPeriod !== period && today && `${period}:${today}` in boards) setShownPeriod(period);
 
   // Load every period up front so switching tabs is instant.
@@ -55,6 +60,14 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
         save(null);
       });
     }
+    fetchAttempts(supabase, today, ATTEMPT_ROWS).then(
+      (loaded) => !cancelled && setAttemptsByDay((a) => ({ ...a, [today]: loaded })),
+      (error) => {
+        // The ranked board still stands on its own, so a failure here only leaves the attempts out.
+        console.error("Failed to load today's attempts", error);
+        if (!cancelled) setAttemptsByDay((a) => ({ ...a, [today]: null }));
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -70,7 +83,11 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
 
   const podium = ranked.slice(0, 3);
   const rows = ranked.slice(3, TOP_ROWS);
-  const youBelow = you && (you.rank === null || you.rank > TOP_ROWS);
+  // Attempts only belong to a single day's puzzle, so the week and month boards leave them out.
+  const attempts = (!loading && !failed && shownPeriod === "today" && today && attemptsByDay[today]) || null;
+  const youAttempted = !!attempts?.attempts.some((a) => a.you);
+  // A signed-in player who tried today's puzzle without solving it shows up among the attempts instead of with "Play now".
+  const youBelow = you && (you.rank === null ? !youAttempted : you.rank > TOP_ROWS);
 
   return (
     <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
@@ -139,6 +156,24 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
                 <Row entry={you} rank={you.rank} period={shownPeriod} order={TOP_ROWS} onOpen={() => setSelected(you)} />
               </>
             )}
+            {attempts && attempts.total > 0 && (
+              <>
+                <li className="flex items-baseline justify-between gap-3 border-b border-line bg-surface-muted px-4 py-2.5 sm:px-6">
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Still unsolved</span>
+                  <span className="text-[13px] text-ink-muted">
+                    {attempts.total.toLocaleString("en-US")} {attempts.total === 1 ? "player has" : "players have"} tried
+                  </span>
+                </li>
+                {attempts.attempts.map((a, i) => (
+                  <AttemptRow key={a.id} attempt={a} order={TOP_ROWS + 1 + i} onOpen={() => setSelected(a)} />
+                ))}
+                {attempts.total > attempts.attempts.length && (
+                  <li className="border-b border-line px-4 py-3 text-center text-[13px] text-ink-muted last:border-b-0 sm:px-6">
+                    and {(attempts.total - attempts.attempts.length).toLocaleString("en-US")} more
+                  </li>
+                )}
+              </>
+            )}
             {!signedIn && (
               <li className="bg-brand-subtle px-4 py-3.5 text-center text-[15px] text-ink-secondary sm:px-6">
                 <Link href="/login?next=%2Fleaderboard" className="font-semibold text-brand-ink hover:underline">
@@ -152,8 +187,9 @@ export function LeaderboardView({ signedIn }: { signedIn: boolean }) {
       </div>
 
       <p className="mt-5 text-center text-sm text-ink-muted">
-        Today ranks the fastest solves. Weekly and monthly rank points: up to 100 per puzzle, less for slower
-        solves or a hint. Tap a player to see their record.
+        Today ranks the fastest solves, followed by players who are still playing or got it wrong. Weekly and
+        monthly rank points: up to 100 per puzzle, less for slower solves or a hint. Tap a player to see their
+        record.
       </p>
 
       <PlayerSheet player={selected} today={today} onClose={() => setSelected(null)} />
@@ -408,6 +444,50 @@ function Row({
         ) : (
           formatValue(period, entry.value)
         )}
+      </span>
+    </li>
+  );
+}
+
+/** A player who tried the day's puzzle without solving it, laid out like `Row` but with their outcome in place of a time. */
+function AttemptRow({ attempt, order = 0, onOpen }: { attempt: Attempt; order?: number; onOpen: () => void }) {
+  const incorrect = attempt.status === "failed";
+  return (
+    <li
+      style={{ "--i": order } as CSSProperties}
+      className={cn(
+        "stagger relative grid animate-rise transition-colors hover:bg-surface-muted has-[button:focus-visible]:bg-surface-muted grid-cols-[36px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:grid-cols-[56px_1fr_110px_110px] sm:gap-0 sm:px-6 sm:py-3.5",
+        attempt.you && "bg-brand-subtle",
+      )}
+    >
+      <span className="text-[15px] font-semibold text-ink-faint">–</span>
+      <span className="flex min-w-0 items-center gap-3">
+        <Avatar name={attempt.name} you={attempt.you} tone={toneFor(attempt.id)} size={36} />
+        <span className="min-w-0">
+          <span className="flex min-w-0 items-center font-semibold text-ink">
+            <PlayerButton name={attempt.name} onClick={onOpen} />
+            {attempt.you && <span className="ml-2 shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">You</span>}
+          </span>
+          <span className="flex items-center gap-1 text-[13px] text-ink-muted">
+            <span className="sm:hidden">
+              <FlameIcon size={13} className="-mt-0.5 inline" /> {attempt.streak} ·
+            </span>
+            {formatSolved(attempt.solved)}
+          </span>
+        </span>
+      </span>
+      <span className="hidden items-center justify-end gap-1.5 text-[15px] tabular-nums text-ink-secondary sm:flex">
+        <FlameIcon size={16} />
+        {attempt.streak}
+      </span>
+      <span
+        className={cn(
+          "flex items-center justify-end gap-1 text-right text-sm font-semibold sm:text-[15px]",
+          incorrect ? "text-danger" : "text-ink-muted",
+        )}
+      >
+        {incorrect ? <CloseIcon size={14} aria-hidden /> : <ClockIcon size={14} aria-hidden />}
+        {incorrect ? "Incorrect" : "Playing"}
       </span>
     </li>
   );

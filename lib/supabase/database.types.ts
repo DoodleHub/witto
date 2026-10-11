@@ -180,6 +180,18 @@ export type Database = {
           value: number
         }[]
       }
+      leaderboard_attempts: {
+        Args: { max_rows?: number; on_day: string }
+        Returns: {
+          display_name: string
+          is_you: boolean
+          solved: number
+          status: string
+          streak: number
+          total: number
+          user_id: string
+        }[]
+      }
       normalize_answer: { Args: { input: string }; Returns: string }
       play_move: { Args: { move: Json; on_day: string }; Returns: Json }
       play_snapshot: {
