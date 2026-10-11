@@ -208,7 +208,7 @@ function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
                     // Only finished plays are listed, so anything unsolved was attempted and got wrong rather than skipped.
                     <span className="inline-flex items-center gap-1 font-semibold text-danger">
                       <CloseIcon size={14} aria-hidden />
-                      Not solved
+                      Incorrect
                     </span>
                   )}
                 </span>
