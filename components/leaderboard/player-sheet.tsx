@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
-import { FlameIcon, LightbulbIcon, SnowflakeIcon, TYPE_ICONS } from "@/components/ui/icons";
+import { CloseIcon, FlameIcon, LightbulbIcon, SnowflakeIcon, TYPE_ICONS } from "@/components/ui/icons";
 import { Overline } from "@/components/ui/overline";
 import { Sheet, SheetClose } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -205,7 +205,11 @@ function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
                       <span className="block text-[13px] text-ink-muted">{play.points} pts</span>
                     </>
                   ) : (
-                    <span className="font-semibold text-danger">Missed</span>
+                    // Only finished plays are listed, so anything unsolved was attempted and got wrong rather than skipped.
+                    <span className="inline-flex items-center gap-1 font-semibold text-danger">
+                      <CloseIcon size={14} aria-hidden />
+                      Not solved
+                    </span>
                   )}
                 </span>
               </li>
