@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fromDateKey } from "./date";
 import type { Database } from "./supabase/database.types";
 
 export type AchievementGroup = "milestones" | "streaks" | "skill" | "speed";
@@ -148,4 +149,9 @@ export function nextUp(achievements: Achievement[]): Achievement | null {
     if (!best || a.progress / a.target > best.progress / best.target) best = a;
   }
   return best;
+}
+
+/** "Oct 5, 2026", for the day an achievement was earned. */
+export function formatEarned(key: string) {
+  return fromDateKey(key).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }

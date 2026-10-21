@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ACHIEVEMENT_GROUPS,
   fetchAchievements,
+  formatEarned,
   isAchievementId,
   markAchievementsSeen,
   nextUp,
@@ -17,20 +18,30 @@ import {
 } from "@/lib/achievements";
 import { createClient } from "@/lib/supabase/client";
 import { useToday } from "@/lib/today";
-import { AchievementSheet, formatEarned } from "./achievements-sheet";
+import { AchievementRow } from "./achievement-row";
 import { Medal, ProgressBar } from "./medal";
 
+/** How long a row linked to stays lit up. */
+const HIGHLIGHT_MS = 2400;
+
+/** Brings an achievement's row into view. */
+function scrollToRow(id: AchievementId) {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById(`achievement-${id}`)?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+}
+
 /**
- * The Achievements tab: a summary of how far the player has come, then every medal grouped by kind. Anything
- * earned that they haven't been shown yet spins in as it loads and is recorded as seen; it and anything earned
- * today keep a "New" tag for the visit. `focus` opens one achievement straight away (the unlock toast links here).
+ * The Achievements tab: a summary of how far the player has come, then every achievement grouped by kind, each
+ * with its description and status in full. Anything earned that they haven't been shown yet spins in as it loads
+ * and is recorded as seen; it and anything earned today keep a "New" tag for the visit. `focus` scrolls to one
+ * achievement and lights it up (the unlock toast links here).
  */
 export function AchievementsView({ userId, focus }: { userId: string; focus: string | null }) {
   const today = useToday();
   const [list, setList] = useState<Achievement[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [unseen, setUnseen] = useState<ReadonlySet<AchievementId>>(new Set());
-  const [selected, setSelected] = useState<AchievementId | null>(isAchievementId(focus) ? focus : null);
+  const [highlighted, setHighlighted] = useState<AchievementId | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +53,10 @@ export function AchievementsView({ userId, focus }: { userId: string; focus: str
         setList(achievements);
         setUnseen(new Set(ids));
         markAchievementsSeen(supabase, ids).catch((error) => console.error("Failed to save seen achievements", error));
+        if (isAchievementId(focus)) {
+          // After the rows have rendered.
+          setTimeout(() => !cancelled && highlight(focus), 120);
+        }
       },
       (error) => {
         console.error("Failed to load achievements", error);
@@ -51,12 +66,19 @@ export function AchievementsView({ userId, focus }: { userId: string; focus: str
     return () => {
       cancelled = true;
     };
+    // The focus is only for arriving from a link, so a change of it shouldn't refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  function close() {
-    setSelected(null);
-    // Drops the toast's ?a= so a refresh doesn't reopen it.
-    if (focus) window.history.replaceState(null, "", "/achievements");
+  useEffect(() => {
+    if (!highlighted) return;
+    const timer = setTimeout(() => setHighlighted(null), HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [highlighted]);
+
+  function highlight(id: AchievementId) {
+    scrollToRow(id);
+    setHighlighted(id);
   }
 
   if (failed) {
@@ -75,7 +97,7 @@ export function AchievementsView({ userId, focus }: { userId: string; focus: str
 
   return (
     <Shell>
-      <Summary achievements={list} onSelect={setSelected} />
+      <Summary achievements={list} onSelect={highlight} />
 
       <div className="mt-3 space-y-3 sm:mt-5 sm:space-y-5">
         {ACHIEVEMENT_GROUPS.map((group, g) => {
@@ -84,7 +106,7 @@ export function AchievementsView({ userId, focus }: { userId: string; focus: str
           return (
             <Card
               key={group.id}
-              className="stagger animate-rise px-4 py-5 sm:px-8 sm:py-7"
+              className="stagger animate-rise px-5 pt-5 pb-2 sm:px-8 sm:pt-7 sm:pb-4"
               style={{ "--i": g + 1 } as CSSProperties}
             >
               <section aria-labelledby={`achievements-${group.id}`}>
@@ -96,15 +118,15 @@ export function AchievementsView({ userId, focus }: { userId: string; focus: str
                     {items.filter((a) => a.earnedOn).length} of {items.length}
                   </span>
                 </div>
-                <ul className="mt-4 grid grid-cols-4 gap-x-1 gap-y-4 sm:grid-cols-6 sm:gap-y-6">
+                <ul className="mt-2 grid divide-y divide-line sm:grid-cols-2 sm:gap-x-8 sm:divide-y-0">
                   {items.map((a, i) => (
                     <li key={a.id}>
-                      <MedalButton
+                      <AchievementRow
                         achievement={a}
                         index={i}
                         fresh={isNew(a)}
                         celebrate={unseen.has(a.id)}
-                        onClick={() => setSelected(a.id)}
+                        highlighted={highlighted === a.id}
                       />
                     </li>
                   ))}
@@ -114,8 +136,6 @@ export function AchievementsView({ userId, focus }: { userId: string; focus: str
           );
         })}
       </div>
-
-      <AchievementSheet achievement={list.find((a) => a.id === selected) ?? null} onClose={close} />
     </Shell>
   );
 }
@@ -201,49 +221,6 @@ function SummaryRow({
   );
 }
 
-function MedalButton({
-  achievement: a,
-  index,
-  fresh,
-  celebrate,
-  onClick,
-}: {
-  achievement: Achievement;
-  index: number;
-  fresh: boolean;
-  celebrate: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex w-full flex-col items-center gap-1.5 rounded-lg px-0.5 py-1 text-center outline-none focus-visible:ring-4 focus-visible:ring-[var(--focus-ring)]"
-    >
-      <span className="relative transition-transform duration-200 ease-[var(--ease-spring)] group-hover:-translate-y-0.5 group-active:scale-95">
-        <Medal
-          achievement={a}
-          size={60}
-          celebrate={celebrate}
-          className={celebrate ? undefined : "stagger animate-scale-in"}
-          style={{ "--i": index } as CSSProperties}
-        />
-        {fresh && (
-          <span className="absolute -right-2 -top-1 animate-scale-in rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-on-brand shadow-brand [animation-delay:600ms]">
-            New
-          </span>
-        )}
-      </span>
-      <span className={cn("line-clamp-2 text-[12px] font-medium leading-tight sm:text-[13px]", a.earnedOn ? "text-ink" : "text-ink-muted")}>
-        {a.title}
-      </span>
-      <span className="sr-only">
-        {a.earnedOn ? `Earned ${formatEarned(a.earnedOn)}` : `Locked, ${a.progress} of ${a.target}`}
-      </span>
-    </button>
-  );
-}
-
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
@@ -278,11 +255,14 @@ export function AchievementsSkeleton() {
         {[0, 1].map((i) => (
           <Card key={i} className="mt-3 px-4 py-5 sm:mt-5 sm:px-8 sm:py-7">
             <Skeleton className="mx-1 h-4 w-24" />
-            <div className="mt-4 grid grid-cols-4 gap-y-4 sm:grid-cols-6">
-              {Array.from({ length: 6 }, (_, j) => (
-                <div key={j} className="flex flex-col items-center gap-2">
-                  <Skeleton className="size-[60px] rounded-full" />
-                  <Skeleton className="h-3 w-12" />
+            <div className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {Array.from({ length: 4 }, (_, j) => (
+                <div key={j} className="flex items-center gap-3.5">
+                  <Skeleton className="size-[52px] shrink-0 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-3 w-full max-w-[220px]" />
+                  </div>
                 </div>
               ))}
             </div>

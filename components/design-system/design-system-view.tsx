@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { AchievementSheet } from "@/components/achievements/achievements-sheet";
+import { AchievementRow } from "@/components/achievements/achievement-row";
 import { Medal } from "@/components/achievements/medal";
 import { UnlockToast } from "@/components/achievements/unlock-toast";
 import { Avatar } from "@/components/ui/avatar";
@@ -143,7 +143,6 @@ const SAMPLE_ACHIEVEMENTS: Achievement[] = (Object.keys(ACHIEVEMENT_META) as Ach
 
 function AchievementsDemo() {
   const [toast, setToast] = useState<Achievement[] | null>(null);
-  const [selected, setSelected] = useState<Achievement | null>(null);
   const earned = SAMPLE_ACHIEVEMENTS.filter((a) => a.earnedOn);
   const locked = SAMPLE_ACHIEVEMENTS.filter((a) => !a.earnedOn);
 
@@ -162,12 +161,6 @@ function AchievementsDemo() {
         ))}
       </div>
       <div className="mt-8 flex flex-wrap gap-3">
-        <Button variant="secondary" size="sm" onClick={() => setSelected(earned[0])}>
-          Open an earned one
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => setSelected(locked.find((a) => a.target > 1) ?? locked[0])}>
-          Open a locked one
-        </Button>
         <Button variant="secondary" size="sm" onClick={() => setToast([earned[0]])}>
           Unlock one
         </Button>
@@ -175,15 +168,17 @@ function AchievementsDemo() {
           Unlock several
         </Button>
       </div>
-      <AchievementSheet achievement={selected} onClose={() => setSelected(null)} />
+      <p className="mb-2 mt-8 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Rows · earned, underway, untouched</p>
+      <div className="max-w-[420px] divide-y divide-line">
+        <AchievementRow achievement={earned[0]} fresh />
+        <AchievementRow achievement={locked.find((a) => a.target > 1) ?? locked[0]} />
+        <AchievementRow achievement={locked.find((a) => a.target === 1) ?? locked[0]} />
+      </div>
       {toast && (
         <UnlockToast
           key={toast.map((a) => a.id).join()}
           unlocked={toast}
-          onOpen={() => {
-            setSelected(toast[0]);
-            setToast(null);
-          }}
+          onOpen={() => setToast(null)}
           onDismiss={() => setToast(null)}
         />
       )}

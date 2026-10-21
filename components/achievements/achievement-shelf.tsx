@@ -4,8 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { cn } from "@/components/ui/cn";
 import { Overline } from "@/components/ui/overline";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Achievement, AchievementId } from "@/lib/achievements";
-import { formatEarned } from "./achievements-sheet";
+import { formatEarned, type Achievement, type AchievementId } from "@/lib/achievements";
 import { Medal } from "./medal";
 
 /**

@@ -16,12 +16,12 @@ Stack: Next.js 16 (App Router, `proxy.ts` rather than `middleware.ts`), React 19
 
 ## Layout
 
-- `app/`: routes. `(today)/` is the home page with today's challenge, `(auth)/` holds login, signup and their Server Actions (`actions.ts`), `leaderboard/` is public, `achievements/` is the signed-in player's medals (`?a=<id>` opens one), and `design-system/` is a gallery of the UI kit. `layout.tsx` is the app shell. `manifest.ts` is the PWA manifest.
+- `app/`: routes. `(today)/` is the home page with today's challenge, `(auth)/` holds login, signup and their Server Actions (`actions.ts`), `leaderboard/` is public, `achievements/` is the signed-in player's medals (`?a=<id>` scrolls to and highlights one), and `design-system/` is a gallery of the UI kit. `layout.tsx` is the app shell. `manifest.ts` is the PWA manifest.
 - `components/`
   - `games/`: one component per game type (`answer-game.tsx` covers both riddle and math). Each one takes `GameProps<Content, Play>` from `types.ts`.
   - `today/`: the Today page. `today-view.tsx` loads the challenge and progress. `challenge-card.tsx` handles reveal and sends each type to its game.
   - `leaderboard/`, `auth/`: views for their routes.
-  - `achievements/`: the Achievements tab (`achievements-view.tsx`), the `Medal`, the detail sheet, the unlock toast and the profile shelf.
+  - `achievements/`: the Achievements tab (`achievements-view.tsx`), the `Medal` and `AchievementRow`, the unlock toast and the profile shelf.
   - `shell/`: the header, mobile tab bar, account menu, install/notification prompts, the in-app-browser notice and service worker registration.
   - `ui/`: shared primitives (Button, Card, Chip, TextInput, icons…) plus `cn()`. Reuse these before writing new ones.
 - `lib/`
