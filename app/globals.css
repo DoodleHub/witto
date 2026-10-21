@@ -72,6 +72,18 @@
 
   /* Challenge card wash */
   --challenge-bg: linear-gradient(180deg, #f7f3ff 0%, #f3eefe 100%);
+
+  /* Achievement medals: saturated enough to carry a white glyph in either theme, so they aren't redefined for dark. */
+  --medal-brand: linear-gradient(145deg, #b39cff 0%, #7a5ae6 48%, #5634c4 100%);
+  --medal-flame: linear-gradient(145deg, #ffd27a 0%, #ff9a3d 45%, #ea4a26 100%);
+  --medal-frost: linear-gradient(145deg, #bfe1ff 0%, #6aa8f4 48%, #3a6fd6 100%);
+  --medal-mint: linear-gradient(145deg, #a8ecc6 0%, #3fbf83 48%, #1d8a5a 100%);
+  --medal-gold: linear-gradient(145deg, #ffe9a3 0%, #f2bf3c 45%, #c98a12 100%);
+  --medal-glow-brand: rgb(122 90 230 / 0.45);
+  --medal-glow-flame: rgb(242 85 44 / 0.4);
+  --medal-glow-frost: rgb(58 111 214 / 0.4);
+  --medal-glow-mint: rgb(35 136 90 / 0.4);
+  --medal-glow-gold: rgb(201 138 18 / 0.45);
 }
 
 /* Dark palette, shared by the OS-preference and explicit selectors below. */
@@ -247,6 +259,11 @@
   --animate-draw: draw 360ms var(--ease-out-quint) 160ms both;
   --animate-underline: underline 280ms var(--ease-out-quint) both;
   --animate-flicker: flicker 2.6s ease-in-out infinite;
+  --animate-toast-in: toast-in 460ms var(--ease-spring) both;
+  --animate-toast-out: toast-out 220ms ease-in both;
+  --animate-medal-unlock: medal-unlock 760ms var(--ease-spring) 140ms both;
+  --animate-medal-shine: medal-shine 1100ms var(--ease-out-quint) 520ms both;
+  --animate-medal-burst: medal-burst 900ms var(--ease-out-quint) 300ms both;
 }
 
 @keyframes pop {
@@ -303,6 +320,33 @@
   0% { transform: translate(0, 0) rotate(0); opacity: 1; }
   35% { transform: translate(calc(var(--x) * 0.7), var(--y)) rotate(calc(var(--r) * 0.5)); opacity: 1; }
   100% { transform: translate(var(--x), calc(var(--y) + 220px)) rotate(var(--r)); opacity: 0; }
+}
+
+/* The achievement toast drops in with a little bounce and slips away downwards. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.94); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(16px) scale(0.96); }
+}
+@keyframes toast-timer {
+  to { transform: scaleX(0); }
+}
+/* A medal being unlocked: it spins up from small, overshoots and settles. */
+@keyframes medal-unlock {
+  0% { opacity: 0; transform: scale(0.3) rotate(-40deg); }
+  60% { opacity: 1; transform: scale(1.12) rotate(6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+/* A band of light sweeping across a medal once it lands. */
+@keyframes medal-shine {
+  from { transform: translateX(-130%) skewX(-20deg); }
+  to { transform: translateX(130%) skewX(-20deg); }
+}
+/* The halo behind a medal being unlocked: grows out and fades. */
+@keyframes medal-burst {
+  from { opacity: 0.9; transform: scale(0.6); }
+  to { opacity: 0; transform: scale(1.9); }
 }
 
 /* Staggers a list's entrance: set --i to the item's index. */

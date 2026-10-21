@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { AchievementShelf } from "@/components/achievements/achievement-shelf";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import { FlameIcon, LightbulbIcon, SnowflakeIcon, TYPE_ICONS } from "@/components/ui/icons";
 import { Overline } from "@/components/ui/overline";
 import { Sheet, SheetClose } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchAchievements, type Achievement } from "@/lib/achievements";
 import { CHALLENGE_TYPES, TYPE_META } from "@/lib/challenges";
 import { formatDuration, fromDateKey } from "@/lib/date";
 import { fetchPlayerProfile, toneFor, type Entry, type PlayerProfile } from "@/lib/leaderboard";
@@ -41,6 +43,7 @@ export function PlayerSheet({
   onClose: () => void;
 }) {
   const [profiles, setProfiles] = useState<Profiles>({});
+  const [achievements, setAchievements] = useState<Record<string, Achievement[] | "error">>({});
   const key = player && today ? `${player.id}:${today}` : null;
 
   useEffect(() => {
@@ -57,6 +60,22 @@ export function PlayerSheet({
       cancelled = true;
     };
   }, [player, today, key, profiles]);
+
+  // Keyed by `key` like the profile, so a new day (and anything it unlocked) loads afresh.
+  useEffect(() => {
+    if (!player || !key || key in achievements) return;
+    let cancelled = false;
+    fetchAchievements(createClient(), player.id).then(
+      (list) => !cancelled && setAchievements((a) => ({ ...a, [key]: list })),
+      (error) => {
+        console.error("Failed to load the player's achievements", error);
+        if (!cancelled) setAchievements((a) => ({ ...a, [key]: "error" }));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [player, key, achievements]);
 
   const profile = key ? profiles[key] : undefined;
 
@@ -88,7 +107,7 @@ export function PlayerSheet({
               We couldn&apos;t load this player. Try again later.
             </p>
           ) : (
-            <ProfileBody profile={profile} />
+            <ProfileBody profile={profile} achievements={key ? achievements[key] : undefined} />
           )}
         </div>
       )}
@@ -97,7 +116,13 @@ export function PlayerSheet({
 }
 
 /** Everything below the header; `undefined` while it loads. */
-function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
+function ProfileBody({
+  profile,
+  achievements,
+}: {
+  profile: PlayerProfile | undefined;
+  achievements: Achievement[] | "error" | undefined;
+}) {
   const loading = !profile;
   const types = new Map(profile?.types.map((t) => [t.type, t]));
 
@@ -135,6 +160,8 @@ function ProfileBody({ profile }: { profile: PlayerProfile | undefined }) {
           note={profile && (profile.hints ? `${plural(profile.hints, "hint")} taken` : "No hints taken")}
         />
       </div>
+
+      <AchievementShelf achievements={achievements} />
 
       <Overline className="mt-6 sm:text-xs">By puzzle type</Overline>
       <ul className="mt-2 divide-y divide-line">

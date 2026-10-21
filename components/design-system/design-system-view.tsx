@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { AchievementsSheet } from "@/components/achievements/achievements-sheet";
+import { Medal } from "@/components/achievements/medal";
+import { UnlockToast } from "@/components/achievements/unlock-toast";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,6 +28,7 @@ import {
 } from "@/components/ui/icons";
 import { Overline } from "@/components/ui/overline";
 import { TextInput } from "@/components/ui/text-input";
+import { ACHIEVEMENT_META, type Achievement, type AchievementId } from "@/lib/achievements";
 import { CHALLENGE_TYPES, TYPE_META } from "@/lib/challenges";
 
 const COLOR_GROUPS: { name: string; tokens: [string, string][] }[] = [
@@ -102,6 +106,94 @@ const RADII = [
   ["2xl", "22px", "Cards"],
   ["full", "999px", "Chips, avatars"],
 ];
+
+const SAMPLE_TARGETS: Partial<Record<AchievementId, number>> = {
+  solves_10: 10,
+  solves_50: 50,
+  solves_100: 100,
+  points_1000: 1000,
+  all_types: 7,
+  streak_3: 3,
+  streak_7: 7,
+  streak_30: 30,
+  streak_100: 100,
+  perfect_week: 7,
+  no_hints_10: 10,
+};
+
+/** Every achievement, as a player partway through might have them: some earned, some underway, some untouched. */
+const SAMPLE_ACHIEVEMENTS: Achievement[] = (Object.keys(ACHIEVEMENT_META) as AchievementId[]).map((id, i) => {
+  const meta = ACHIEVEMENT_META[id];
+  const target = SAMPLE_TARGETS[id] ?? 1;
+  const earned = i % 3 !== 2;
+  const progress = earned ? target : target > 1 ? Math.round(target * 0.6) : 0;
+  return {
+    id,
+    title: meta.title,
+    description: meta.describe(target),
+    group: meta.group,
+    tone: meta.tone,
+    best: "best" in meta,
+    progress,
+    target,
+    earnedOn: earned ? `2026-10-${String(3 + i).padStart(2, "0")}` : null,
+    seen: true,
+  };
+});
+
+function AchievementsDemo() {
+  const [toast, setToast] = useState<Achievement[] | null>(null);
+  const [sheet, setSheet] = useState<{ selected: AchievementId | null } | null>(null);
+  const earned = SAMPLE_ACHIEVEMENTS.filter((a) => a.earnedOn);
+  const locked = SAMPLE_ACHIEVEMENTS.filter((a) => !a.earnedOn);
+
+  return (
+    <Card className="p-6">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Medals · earned</p>
+      <div className="flex flex-wrap gap-3">
+        {earned.map((a) => (
+          <Medal key={a.id} achievement={a} size={56} />
+        ))}
+      </div>
+      <p className="mb-4 mt-8 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Medals · locked, with progress</p>
+      <div className="flex flex-wrap gap-3">
+        {locked.map((a) => (
+          <Medal key={a.id} achievement={a} size={56} />
+        ))}
+      </div>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button variant="secondary" size="sm" onClick={() => setSheet({ selected: null })}>
+          Open the sheet
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setToast([earned[0]])}>
+          Unlock one
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setToast(earned.slice(1, 4))}>
+          Unlock several
+        </Button>
+      </div>
+      <AchievementsSheet
+        open={sheet !== null}
+        onClose={() => setSheet(null)}
+        achievements={SAMPLE_ACHIEVEMENTS}
+        fresh={new Set(earned.slice(0, 2).map((a) => a.id))}
+        selected={sheet?.selected ?? null}
+        onSelect={(selected) => setSheet({ selected })}
+      />
+      {toast && (
+        <UnlockToast
+          key={toast.map((a) => a.id).join()}
+          unlocked={toast}
+          onOpen={() => {
+            setSheet({ selected: toast.length === 1 ? toast[0].id : null });
+            setToast(null);
+          }}
+          onDismiss={() => setToast(null)}
+        />
+      )}
+    </Card>
+  );
+}
 
 function Section({ id, title, intro, children }: { id: string; title: string; intro: string; children: ReactNode }) {
   return (
@@ -184,7 +276,7 @@ export function DesignSystemView() {
           token with a light and a dark value.
         </p>
         <nav className="mt-6 flex flex-wrap gap-2 text-sm">
-          {["Themes", "Color", "Typography", "Layout", "Components", "Iconography"].map((s) => (
+          {["Themes", "Color", "Typography", "Layout", "Components", "Achievements", "Iconography"].map((s) => (
             <a
               key={s}
               href={`#${s.toLowerCase()}`}
@@ -364,6 +456,10 @@ export function DesignSystemView() {
               <p className="mt-2 text-lead text-ink">The challenge card is the one place we use the violet wash and the lifted shadow.</p>
             </Card>
           </div>
+        </Section>
+
+        <Section id="achievements" title="Achievements" intro="Medals are struck in one of five colours by kind: violet milestones, flame streaks, frost for freezes, mint skill and gold speed. Locked medals are a faint outline, ringed with progress once a player has made a start. Unlocks spin in with a halo and a sweep of light.">
+          <AchievementsDemo />
         </Section>
 
         <Section id="iconography" title="Iconography" intro="Line icons on a 24px grid with a 1.6px stroke and round caps. Color comes from currentColor. Two filled marks, the sparkle and the flame, are reserved for brand and streak moments.">

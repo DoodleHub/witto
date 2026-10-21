@@ -16,6 +16,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievement_views: {
+        Row: {
+          achievement: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievement_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenges: {
         Row: {
           content: Json
@@ -143,6 +169,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      achievement_catalog: {
+        Args: never
+        Returns: {
+          id: string
+          sort_order: number
+          target: number
+        }[]
+      }
       challenge_for_day: {
         Args: { on_day: string }
         Returns: {
@@ -192,6 +226,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      mark_achievements_seen: { Args: { ids: string[] }; Returns: undefined }
       normalize_answer: { Args: { input: string }; Returns: string }
       play_move: { Args: { move: Json; on_day: string }; Returns: Json }
       play_snapshot: {
@@ -200,6 +235,16 @@ export type Database = {
           p: Database["public"]["Tables"]["plays"]["Row"]
         }
         Returns: Json
+      }
+      player_achievements: {
+        Args: { player: string }
+        Returns: {
+          earned_on: string
+          id: string
+          progress: number
+          seen: boolean
+          target: number
+        }[]
       }
       player_profile: {
         Args: { on_day: string; player: string }
@@ -218,6 +263,31 @@ export type Database = {
         Returns: undefined
       }
       server_now: { Args: never; Returns: string }
+      streak_days: {
+        Args: { played: string[] }
+        Returns: {
+          frozen: number
+          played_on: string
+          streak: number
+        }[]
+      }
+      streak_reminders: {
+        Args: { on_day: string }
+        Returns: {
+          auth: string
+          endpoint: string
+          p256dh: string
+          streak: number
+        }[]
+      }
+      streak_walk: {
+        Args: { on_day: string; played: string[] }
+        Returns: {
+          best: number
+          freezes: number
+          streak: number
+        }[]
+      }
       take_hint: { Args: { context?: Json; on_day: string }; Returns: Json }
       word_marks: { Args: { answer: string; guess: string }; Returns: Json }
     }

@@ -21,9 +21,11 @@ Stack: Next.js 16 (App Router, `proxy.ts` rather than `middleware.ts`), React 19
   - `games/`: one component per game type (`answer-game.tsx` covers both riddle and math). Each one takes `GameProps<Content, Play>` from `types.ts`.
   - `today/`: the Today page. `today-view.tsx` loads the challenge and progress. `challenge-card.tsx` handles reveal and sends each type to its game.
   - `leaderboard/`, `auth/`: views for their routes.
+  - `achievements/`: the `Medal`, the full achievements sheet, the unlock toast and the profile shelf.
   - `shell/`: the header, mobile tab bar, account menu, install/notification prompts, the in-app-browser notice and service worker registration.
   - `ui/`: shared primitives (Button, Card, Chip, TextInput, icons…) plus `cn()`. Reuse these before writing new ones.
 - `lib/`
+  - `achievements.ts`: the copy, group and medal colour for each achievement, keyed by the ids the server returns.
   - `share.ts`: the spoiler-free emoji summary of a finished play behind the result banner's Share button.
   - `challenges.ts`: challenge types, `TYPE_META`/`TYPE_GUIDE` copy, and the public `*Content` and verified `*Play` types for each game.
   - `progress.ts`: the client-side store of the player's plays (see below).
@@ -50,7 +52,9 @@ Players can only write `plays.game_state`, which holds UI-only state such as typ
 
 **Client progress store** (`lib/progress.ts`): a module-level `useSyncExternalStore` cache that mirrors the player's `plays` rows. Writes go through a per-day promise queue, so a play is always created before it is updated. Use `playMove`, `takeHint` and `useGameState` from game components. Never update `plays` directly. `refreshPlay` re-reads a day when the tab becomes visible, because the play may have moved on in another tab or on another device.
 
-**Scoring** (`leaderboard()` SQL function): "today" ranks by fastest solve time. "week" (weeks start on Monday) and "month" (calendar month) rank by points: 100 minus 1 per 6 seconds, minus 20 for a hint, with a floor of 20 for any solve. Streaks count consecutive finished days ending today or yesterday. Every 7th day played earns a streak freeze (up to 2 banked), which covers a missed day without adding to the streak. Freezes are never stored: `streak_walk()` replays them from the player's finished plays, and `streakFor` in `lib/progress.ts` mirrors it for the Today page, so keep the two in sync.
+**Scoring** (`leaderboard()` SQL function): "today" ranks by fastest solve time. "week" (weeks start on Monday) and "month" (calendar month) rank by points: 100 minus 1 per 6 seconds, minus 20 for a hint, with a floor of 20 for any solve. Streaks count consecutive finished days ending today or yesterday. Every 7th day played earns a streak freeze (up to 2 banked), which covers a missed day without adding to the streak. Freezes are never stored: `streak_walk()` replays them from the player's finished plays, and `streakFor` in `lib/progress.ts` mirrors it for the Today page, and `streak_days()` replays the same rules day by day for achievements, so keep all three in sync.
+
+**Achievements** are never stored either. `player_achievements(player)` works out each one's progress and the day it was earned from the player's finished plays; the ids and targets live in `achievement_catalog()`, and `lib/achievements.ts` holds the copy (an id it doesn't know is skipped). The only stored state is `achievement_views`, the earned achievements a player has been shown, written by `mark_achievements_seen()`. The Today page's `AchievementsCard` reloads when today's play finishes and raises the unlock toast for anything earned but unseen, so each one is celebrated once across devices. Medals also show on the profile sheet. To add one, add a row to the catalog and a metric to `player_achievements` in a new migration, then its copy in `ACHIEVEMENT_META` and its glyph in `ACHIEVEMENT_ICONS`.
 
 **Auth**: email and password with a unique display name (3–24 characters, unique regardless of case). A trigger on `auth.users` creates the `profiles` row in the same transaction, so a duplicate name aborts the signup. The proxy redirects signed-out visitors to `/login?next=…`, except on `/login`, `/signup` and `/leaderboard`. Use `getSessionUser()` (based on `getClaims()`) to read the user on the server. Use `safeNext()` for redirects.
 

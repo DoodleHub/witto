@@ -242,6 +242,103 @@ export const UserPlusIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ChevronRightIcon = (p: IconProps) => (
+  <Base strokeWidth={2} {...p}>
+    <path d="m9 5 7 7-7 7" />
+  </Base>
+);
+
+export const ChevronLeftIcon = (p: IconProps) => (
+  <Base strokeWidth={2} {...p}>
+    <path d="m15 5-7 7 7 7" />
+  </Base>
+);
+
+export const LockIcon = (p: IconProps) => (
+  <Base strokeWidth={2} {...p}>
+    <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+    <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+  </Base>
+);
+
+/** The flame as a single-colour glyph, for use on a coloured medal where the gradient flame would vanish. */
+export const FlameGlyph = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12.6 2.2c.6 3.3-1.1 5.1-2.8 6.9C8.1 10.9 6 13 6 15.9A6 6 0 0 0 18 16c0-2.8-1.2-4.8-2.6-6.2-.2 1.4-.9 2.4-2 2.8.6-3.6-.2-7.4-.8-10.4z" fill="currentColor" fillOpacity={0.25} />
+    <path d="M12.2 13.2c-1.6 1.4-2.6 2.6-2.6 4.1a2.4 2.4 0 0 0 4.8 0c0-1.3-.8-2.4-2.2-4.1z" />
+  </Base>
+);
+
+export const SparkleIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7z" fill="currentColor" fillOpacity={0.25} />
+    <path d="M18.5 15.5c.2 1.5.8 2.1 2.3 2.3-1.5.2-2.1.8-2.3 2.3-.2-1.5-.8-2.1-2.3-2.3 1.5-.2 2.1-.8 2.3-2.3z" />
+  </Base>
+);
+
+export const StarIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="m12 3 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9l-5.4 2.9 1.1-6.1-4.5-4.3 6.1-.8z" fill="currentColor" fillOpacity={0.25} />
+  </Base>
+);
+
+export const GemIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M6.5 4h11l3.5 5-9 11L3 9z" fill="currentColor" fillOpacity={0.25} />
+    <path d="M3 9h18M9.5 4 8 9l4 11 4-11-1.5-5" />
+  </Base>
+);
+
+export const TrophyIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M7 3.5h10V9a5 5 0 0 1-10 0z" fill="currentColor" fillOpacity={0.25} />
+    <path d="M7 5.5H4.5a3 3 0 0 0 3 4.4M17 5.5h2.5a3 3 0 0 1-3 4.4M12 14v3.5M8 20.5h8M9.5 17.5h5" />
+  </Base>
+);
+
+export const MedalIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M8 2.5 10.5 9M16 2.5 13.5 9" />
+    <circle cx="12" cy="15" r="6" fill="currentColor" fillOpacity={0.25} />
+    <path d="m12 12.2.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z" />
+  </Base>
+);
+
+export const CompassIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor" fillOpacity={0.25} />
+  </Base>
+);
+
+export const CalendarCheckIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 10h17M8 3v4M16 3v4M9 15l2 2 4-4" />
+  </Base>
+);
+
+export const TargetIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+  </Base>
+);
+
+export const BoltIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M13.5 2.5 5 13.5h6l-1 8 8.5-11h-6z" fill="currentColor" fillOpacity={0.25} />
+  </Base>
+);
+
+export const SunriseIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M7 17a5 5 0 0 1 10 0" fill="currentColor" fillOpacity={0.25} />
+    <path d="M2.5 17h19M5 21h14M12 4v4M4.6 9.6l1.4 1.4M19.4 9.6 18 11M9.5 6.5 12 4l2.5 2.5" />
+  </Base>
+);
+
 export const TYPE_ICONS: Record<ChallengeType, (p: IconProps) => React.ReactElement> = {
   word: WordIcon,
   math: CalculatorIcon,

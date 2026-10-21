@@ -6,6 +6,7 @@ import { fetchChallenge, revealChallenge, type DailyChallenge, type SealedChalle
 import { refreshPlay, streakFor, useProgress } from "@/lib/progress";
 import { useToday } from "@/lib/today";
 import { createClient } from "@/lib/supabase/client";
+import { AchievementsCard, AchievementsCardSkeleton } from "./achievements-card";
 import { ChallengeCard, ChallengeCardSkeleton } from "./challenge-card";
 import { InviteStrip } from "./invite-strip";
 import { NextChallengeCountdown } from "./next-challenge-countdown";
@@ -94,6 +95,9 @@ export function TodayView({ userId }: { userId: string }) {
           playedDays={new Set(store ? Object.keys(store.results) : [])}
         />
       }
+      achievements={
+        <AchievementsCard userId={userId} today={today} finishedToday={store && today ? !!store.results[today] : null} />
+      }
     />
   );
 }
@@ -104,11 +108,20 @@ export function TodaySkeleton() {
     <TodayShell
       challenge={<ChallengeCardSkeleton />}
       streak={<StreakCard today={null} streak={null} playedDays={new Set()} />}
+      achievements={<AchievementsCardSkeleton />}
     />
   );
 }
 
-function TodayShell({ challenge, streak }: { challenge: ReactNode; streak: ReactNode }) {
+function TodayShell({
+  challenge,
+  streak,
+  achievements,
+}: {
+  challenge: ReactNode;
+  streak: ReactNode;
+  achievements: ReactNode;
+}) {
   return (
     <div className="mx-auto max-w-[884px] px-4 pt-3 sm:px-8 sm:pt-12">
       <header className="text-center">
@@ -122,7 +135,10 @@ function TodayShell({ challenge, streak }: { challenge: ReactNode; streak: React
 
       <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-5">
         {challenge}
-        <div className="sm:px-1">{streak}</div>
+        <div className="space-y-3 sm:space-y-5 sm:px-1">
+          {streak}
+          {achievements}
+        </div>
       </div>
 
       <div className="mt-8 sm:mt-10">
