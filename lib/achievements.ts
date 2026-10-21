@@ -96,8 +96,8 @@ export type Achievement = {
   seen: boolean | null;
 };
 
-function isKnown(id: string): id is AchievementId {
-  return id in ACHIEVEMENT_META;
+export function isAchievementId(id: string | null | undefined): id is AchievementId {
+  return !!id && Object.hasOwn(ACHIEVEMENT_META, id);
 }
 
 /** Every achievement for `playerId`, earned or not, in display order. */
@@ -105,7 +105,7 @@ export async function fetchAchievements(supabase: SupabaseClient<Database>, play
   const { data, error } = await supabase.rpc("player_achievements", { player: playerId });
   if (error) throw error;
   return data.flatMap((row) => {
-    if (!isKnown(row.id)) return [];
+    if (!isAchievementId(row.id)) return [];
     const meta: Meta = ACHIEVEMENT_META[row.id];
     return {
       id: row.id,

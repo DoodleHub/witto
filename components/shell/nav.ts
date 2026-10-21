@@ -1,6 +1,7 @@
 export const NAV_ITEMS = [
   { href: "/", label: "Today" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/achievements", label: "Achievements" },
 ] as const;
 
 /** The view transition for moving between tabs: rightward tabs slide in from the right, and leftward ones from the left. */

@@ -145,10 +145,24 @@ function ProgressRing({ ratio, size }: { ratio: number; size: number }) {
 }
 
 /** A thin bar of progress towards a target. */
-export function ProgressBar({ progress, target, className }: { progress: number; target: number; className?: string }) {
+export function ProgressBar({
+  progress,
+  target,
+  tone = "track",
+  className,
+}: {
+  progress: number;
+  target: number;
+  /** "brand" for a bar sitting on the violet challenge wash. */
+  tone?: "track" | "brand";
+  className?: string;
+}) {
   const ratio = Math.min(progress / Math.max(target, 1), 1);
   return (
-    <span className={cn("block h-1.5 overflow-hidden rounded-full bg-track", className)} aria-hidden="true">
+    <span
+      className={cn("block overflow-hidden rounded-full", tone === "brand" ? "h-2 bg-brand-soft" : "h-1.5 bg-track", className)}
+      aria-hidden="true"
+    >
       <span
         className="block h-full origin-left animate-underline rounded-full bg-brand transition-[width] duration-700 ease-out"
         style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 4 : 0)}%` }}

@@ -22,6 +22,8 @@ export function Sheet({
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  /** Set while the effect below closes the dialog itself, whose `close` event isn't the player closing it. */
+  const closingRef = useRef(false);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -36,7 +38,12 @@ export function Sheet({
     root.style.overflow = "hidden";
     return () => {
       root.style.overflow = overflow;
-      dialog.close();
+      // Without this, a sheet that opens on mount closes itself in development, where effects run twice.
+      // A dialog the player already closed (Escape) fires no second event, so only flag one that's still open.
+      if (dialog.open) {
+        closingRef.current = true;
+        dialog.close();
+      }
     };
   }, [open]);
 
@@ -46,7 +53,10 @@ export function Sheet({
       aria-labelledby={labelledBy}
       tabIndex={-1}
       // Escape fires `close` on the dialog itself, so route it through the parent's state.
-      onClose={onClose}
+      onClose={() => {
+        if (closingRef.current) closingRef.current = false;
+        else onClose();
+      }}
       // The inner panel fills the dialog, so a click that lands on the dialog itself is on the backdrop.
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className={cn(

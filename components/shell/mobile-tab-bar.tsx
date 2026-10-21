@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/components/ui/cn";
-import { HomeIcon, PodiumIcon } from "@/components/ui/icons";
+import { HomeIcon, PodiumIcon, TrophyIcon } from "@/components/ui/icons";
 import { NAV_ITEMS, navTransition } from "./nav";
 
-const ICONS = { "/": HomeIcon, "/leaderboard": PodiumIcon };
+const ICONS = { "/": HomeIcon, "/leaderboard": PodiumIcon, "/achievements": TrophyIcon };
 
 /** Whether focusing this element opens the on-screen keyboard. */
 function isTextField(el: EventTarget | null) {
@@ -52,7 +52,7 @@ export function MobileTabBar() {
         typing && "hidden",
       )}
     >
-      <div className="grid h-16 grid-cols-2">
+      <div className="grid h-16 grid-cols-3">
         {NAV_ITEMS.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = ICONS[item.href];

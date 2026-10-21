@@ -14,7 +14,7 @@ const LEAVE_MS = 220;
 
 /**
  * Announces newly earned achievements: a card that springs up above the tab bar with the medal spinning in. Tapping
- * it opens them in the achievements sheet. It leaves by itself after a few seconds, but stays while hovered or
+ * it opens them on the Achievements tab. It leaves by itself after a few seconds, but stays while hovered or
  * focused so nobody loses it mid-read.
  */
 export function UnlockToast({

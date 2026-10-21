@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { AchievementsSheet } from "@/components/achievements/achievements-sheet";
 import { Medal, ProgressBar } from "@/components/achievements/medal";
 import { UnlockToast } from "@/components/achievements/unlock-toast";
+import { navTransition } from "@/components/shell/nav";
 import { Card } from "@/components/ui/card";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,8 +24,8 @@ const AFTER_SOLVE_MS = 1600;
 const ON_LOAD_MS = 700;
 
 /**
- * The player's achievements on the Today page: their latest medals and the one they're closest to, opening the
- * full sheet. It also celebrates: whenever it finds earned achievements the player hasn't been shown (just
+ * The player's achievements on the Today page: their latest medals and the one they're closest to, linking to the
+ * Achievements tab. It also celebrates: whenever it finds earned achievements the player hasn't been shown (just
  * unlocked by today's play, or earned overnight, like fastest of the day), it raises a toast and records them as
  * seen on the server, so each is celebrated once across devices.
  */
@@ -40,8 +42,8 @@ export function AchievementsCard({
   const [list, setList] = useState<Achievement[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [toast, setToast] = useState<Achievement[] | null>(null);
-  const [fresh, setFresh] = useState<ReadonlySet<AchievementId>>(new Set());
-  const [sheet, setSheet] = useState<{ selected: AchievementId | null } | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
   const celebrated = useRef(new Set<AchievementId>());
   const lastFinished = useRef(finishedToday);
 
@@ -65,7 +67,6 @@ export function AchievementsCard({
           () => {
             const ids = unseen.map((a) => a.id);
             ids.forEach((id) => celebrated.current.add(id));
-            setFresh((prev) => new Set([...prev, ...ids]));
             setToast(unseen);
             markAchievementsSeen(supabase, ids).catch((error) => console.error("Failed to save seen achievements", error));
           },
@@ -94,9 +95,9 @@ export function AchievementsCard({
   return (
     <>
       <Card className="overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setSheet({ selected: null })}
+        <Link
+          href="/achievements"
+          transitionTypes={navTransition(pathname, "/achievements")}
           className="group flex w-full animate-fade-in items-center gap-4 px-6 py-5 text-left outline-none transition-colors hover:bg-surface-muted/60 focus-visible:bg-surface-muted sm:gap-5 sm:px-10 sm:py-6"
         >
           <span className="flex shrink-0 items-center">
@@ -142,24 +143,15 @@ export function AchievementsCard({
             size={20}
             className="shrink-0 text-ink-faint transition-transform group-hover:translate-x-0.5 group-hover:text-ink-muted"
           />
-        </button>
+        </Link>
       </Card>
-
-      <AchievementsSheet
-        open={sheet !== null}
-        onClose={() => setSheet(null)}
-        achievements={list}
-        fresh={fresh}
-        selected={sheet?.selected ?? null}
-        onSelect={(selected) => setSheet({ selected })}
-      />
 
       {toast && (
         <UnlockToast
           unlocked={toast}
           onOpen={() => {
-            setSheet({ selected: toast.length === 1 ? toast[0].id : null });
             setToast(null);
+            router.push(toast.length === 1 ? `/achievements?a=${toast[0].id}` : "/achievements");
           }}
           onDismiss={() => setToast(null)}
         />

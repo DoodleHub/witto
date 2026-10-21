@@ -16,12 +16,12 @@ Stack: Next.js 16 (App Router, `proxy.ts` rather than `middleware.ts`), React 19
 
 ## Layout
 
-- `app/`: routes. `(today)/` is the home page with today's challenge, `(auth)/` holds login, signup and their Server Actions (`actions.ts`), `leaderboard/` is public, and `design-system/` is a gallery of the UI kit. `layout.tsx` is the app shell. `manifest.ts` is the PWA manifest.
+- `app/`: routes. `(today)/` is the home page with today's challenge, `(auth)/` holds login, signup and their Server Actions (`actions.ts`), `leaderboard/` is public, `achievements/` is the signed-in player's medals (`?a=<id>` opens one), and `design-system/` is a gallery of the UI kit. `layout.tsx` is the app shell. `manifest.ts` is the PWA manifest.
 - `components/`
   - `games/`: one component per game type (`answer-game.tsx` covers both riddle and math). Each one takes `GameProps<Content, Play>` from `types.ts`.
   - `today/`: the Today page. `today-view.tsx` loads the challenge and progress. `challenge-card.tsx` handles reveal and sends each type to its game.
   - `leaderboard/`, `auth/`: views for their routes.
-  - `achievements/`: the `Medal`, the full achievements sheet, the unlock toast and the profile shelf.
+  - `achievements/`: the Achievements tab (`achievements-view.tsx`), the `Medal`, the detail sheet, the unlock toast and the profile shelf.
   - `shell/`: the header, mobile tab bar, account menu, install/notification prompts, the in-app-browser notice and service worker registration.
   - `ui/`: shared primitives (Button, Card, Chip, TextInput, icons…) plus `cn()`. Reuse these before writing new ones.
 - `lib/`
@@ -54,7 +54,7 @@ Players can only write `plays.game_state`, which holds UI-only state such as typ
 
 **Scoring** (`leaderboard()` SQL function): "today" ranks by fastest solve time. "week" (weeks start on Monday) and "month" (calendar month) rank by points: 100 minus 1 per 6 seconds, minus 20 for a hint, with a floor of 20 for any solve. Streaks count consecutive finished days ending today or yesterday. Every 7th day played earns a streak freeze (up to 2 banked), which covers a missed day without adding to the streak. Freezes are never stored: `streak_walk()` replays them from the player's finished plays, and `streakFor` in `lib/progress.ts` mirrors it for the Today page, and `streak_days()` replays the same rules day by day for achievements, so keep all three in sync.
 
-**Achievements** are never stored either. `player_achievements(player)` works out each one's progress and the day it was earned from the player's finished plays; the ids and targets live in `achievement_catalog()`, and `lib/achievements.ts` holds the copy (an id it doesn't know is skipped). The only stored state is `achievement_views`, the earned achievements a player has been shown, written by `mark_achievements_seen()`. The Today page's `AchievementsCard` reloads when today's play finishes and raises the unlock toast for anything earned but unseen, so each one is celebrated once across devices. Medals also show on the profile sheet. To add one, add a row to the catalog and a metric to `player_achievements` in a new migration, then its copy in `ACHIEVEMENT_META` and its glyph in `ACHIEVEMENT_ICONS`.
+**Achievements** are never stored either. `player_achievements(player)` works out each one's progress and the day it was earned from the player's finished plays; the ids and targets live in `achievement_catalog()`, and `lib/achievements.ts` holds the copy (an id it doesn't know is skipped). The only stored state is `achievement_views`, the earned achievements a player has been shown, written by `mark_achievements_seen()`. The Today page's `AchievementsCard` reloads when today's play finishes and raises the unlock toast for anything earned but unseen, so each one is celebrated once across devices; the toast links to the Achievements tab, which also marks anything unseen as seen when it loads. Medals also show on the profile sheet. To add one, add a row to the catalog and a metric to `player_achievements` in a new migration, then its copy in `ACHIEVEMENT_META` and its glyph in `ACHIEVEMENT_ICONS`.
 
 **Auth**: email and password with a unique display name (3–24 characters, unique regardless of case). A trigger on `auth.users` creates the `profiles` row in the same transaction, so a duplicate name aborts the signup. The proxy redirects signed-out visitors to `/login?next=…`, except on `/login`, `/signup` and `/leaderboard`. Use `getSessionUser()` (based on `getClaims()`) to read the user on the server. Use `safeNext()` for redirects.
 
